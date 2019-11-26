@@ -67,3 +67,5 @@ class POSTaggers(POSTaggersBase):
     def is_iso_supported(self, iso):
         return iso in self.SSupportedISOs
 
+    def get_L_sentences(self, iso, s):
+        return self.DGetLSentences[iso](s)

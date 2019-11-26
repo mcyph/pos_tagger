@@ -20,12 +20,11 @@ class POSTaggersBase(ABC):
         pass
 
     @abstractmethod
-    def get_L_sentences(self, iso, s, use_pos_tagger_server=True):
+    def get_L_sentences(self, iso, s):
         """
 
         :param iso:
         :param s:
-        :param use_pos_tagger_server:
         :return:
         """
         pass
