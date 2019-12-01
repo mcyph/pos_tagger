@@ -1,16 +1,25 @@
 from toolkit.patterns.Singleton import Singleton
-from network_tools.posix_shm_sockets.SHMClient import SHMClient
+from network_tools.rpc.posix_shm_sockets.SHMClient import SHMClient
+from network_tools.rpc.base_classes.ClientMethodsBase import ClientMethodsBase
+
 from pos_tagger.abstract_base_classes.POSTaggersBase import POSTaggersBase
+from pos_tagger.client_server.POSTaggerServer import POSTaggerServer as srv
 from pos_tagger.consts import CubeItem
 
 
-class POSTaggerClient(POSTaggersBase, Singleton):
-    def __init__(self):
-        self.client = SHMClient(port=40519)
+class POSTaggerClient(POSTaggersBase,
+                      Singleton,
+                      ClientMethodsBase
+                      ):
+
+    def __init__(self, client_provider=None):
+        if client_provider is None:
+            client_provider = SHMClient(srv)
+        ClientMethodsBase.__init__(self, client_provider)
 
     def get_L_sentences(self, iso, s):
-        LRtn = self.client.send_json(
-            'get_L_sentences', [iso, s]
+        LRtn = self.send(
+            srv.get_L_sentences, [iso, s]
         )
         n_LRtn = []
         for LSentence in LRtn:
@@ -19,10 +28,10 @@ class POSTaggerClient(POSTaggersBase, Singleton):
         return n_LRtn
 
     def is_iso_supported(self, iso):
-        return self.client.send_json('is_iso_supported', [iso])
+        return self.send(srv.is_iso_supported, [iso])
 
     def get_L_supported_isos(self):
-        return self.client.send_json('get_L_supported_isos', [])
+        return self.send(srv.get_L_supported_isos, [])
 
 
 if __name__ == '__main__':
