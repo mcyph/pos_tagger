@@ -1,5 +1,5 @@
 from toolkit.patterns.Singleton import Singleton
-from network_tools.rpc.posix_shm_sockets.SHMClient import SHMClient
+from network_tools.rpc.shared_memory.SHMClient import SHMClient
 from network_tools.rpc.base_classes.ClientMethodsBase import ClientMethodsBase
 
 from pos_tagger.abstract_base_classes.POSTaggersBase import POSTaggersBase
