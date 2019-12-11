@@ -13,8 +13,8 @@ class POSTaggerServer(ServerMethodsBase):
         A server which e.g. allows putting the POS Tagger on
         a server which has a GPU for POS tagging acceleration
         """
-        self.pos_taggers = POSTaggers()
         ServerMethodsBase.__init__(self)
+        self.pos_taggers = POSTaggers()
 
     @json_method
     def get_L_sentences(self, iso, s):
