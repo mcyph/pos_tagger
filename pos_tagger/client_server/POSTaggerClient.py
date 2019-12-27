@@ -1,6 +1,6 @@
 from toolkit.patterns.Singleton import Singleton
-from network_tools.rpc.shared_memory.SHMClient import SHMClient
-from network_tools.rpc.base_classes.ClientMethodsBase import ClientMethodsBase
+from shmrpc.rpc.shared_memory.SHMClient import SHMClient
+from shmrpc.rpc.base_classes.ClientMethodsBase import ClientMethodsBase
 
 from pos_tagger.abstract_base_classes.POSTaggersBase import POSTaggersBase
 from pos_tagger.client_server.POSTaggerServer import POSTaggerServer as srv
@@ -13,6 +13,7 @@ class POSTaggerClient(POSTaggersBase,
                       ):
 
     def __init__(self, client_provider=None):
+        print("POSTaggerClient __init__:", client_provider)
         if client_provider is None:
             client_provider = SHMClient(srv)
         ClientMethodsBase.__init__(self, client_provider)

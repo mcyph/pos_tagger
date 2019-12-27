@@ -1,7 +1,7 @@
 from pos_tagger.POSTaggers import POSTaggers
 
-from network_tools.rpc_decorators import json_method
-from network_tools.rpc.base_classes.ServerMethodsBase import ServerMethodsBase
+from shmrpc.rpc_decorators import json_method
+from shmrpc.rpc.base_classes.ServerMethodsBase import ServerMethodsBase
 
 
 class POSTaggerServer(ServerMethodsBase):
