@@ -95,6 +95,8 @@ def get_D_udpipe_langs():
 
 if __name__ == '__main__':
     import spacy_udpipe
+    #print(spacy_udpipe.util.LANGUAGES)
+    #raise SystemExit
 
     for lang in sorted(get_D_udpipe_langs()):
         print("Downloading udpipe lang:", lang)

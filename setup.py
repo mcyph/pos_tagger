@@ -9,8 +9,6 @@ from codecs import open
 from os import path
 from os.path import join
 
-from toolkit.setuptools_helpers import data_paths_json_added
-
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the README file
@@ -66,7 +64,7 @@ setup(
         'scipy',
 
         'pyvi',
-        'pythainlp',
+        'pythainlp', 'pandas',
         'nlpcube',
         'jieba-fast',
         'spacy',
