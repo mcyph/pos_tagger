@@ -1,19 +1,19 @@
 from pos_tagger.POSTaggers import POSTaggers
 
-from shmrpc.rpc_decorators import json_method
-from shmrpc.rpc.base_classes.ServerMethodsBase import ServerMethodsBase
+from speedysvc.rpc_decorators import json_method
+from speedysvc.client_server.base_classes.ServerMethodsBase import ServerMethodsBase
 
 
 class POSTaggerServer(ServerMethodsBase):
     port = 40519
     name = 'postag'
 
-    def __init__(self):
+    def __init__(self, logger_client):
         """
         A server which e.g. allows putting the POS Tagger on
         a server which has a GPU for POS tagging acceleration
         """
-        ServerMethodsBase.__init__(self)
+        ServerMethodsBase.__init__(self, logger_client)
         self.pos_taggers = POSTaggers()
 
     @json_method

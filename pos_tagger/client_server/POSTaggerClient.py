@@ -1,6 +1,6 @@
 from pos_tagger.toolkit.patterns.Singleton import Singleton
-from shmrpc.rpc.shared_memory.SHMClient import SHMClient
-from shmrpc.rpc.base_classes.ClientMethodsBase import ClientMethodsBase
+from speedysvc.client_server.shared_memory.SHMClient import SHMClient
+from speedysvc.client_server.base_classes.ClientMethodsBase import ClientMethodsBase
 
 from pos_tagger.abstract_base_classes.POSTaggersBase import POSTaggersBase
 from pos_tagger.client_server.POSTaggerServer import POSTaggerServer as srv
