@@ -22,20 +22,24 @@ class SpacyPOS(EngineBase):
     def __init__(self, pos_taggers):
         EngineBase.__init__(self, pos_taggers)
 
+    def download_engine(self):
+        TODO
+
     def is_iso_supported(self, iso):
         return iso in self.get_L_supported_isos()
 
     def get_L_supported_isos(self):
         L = [
-            'de',
-            'el',
             'en',
-            'es',
+            'de',
             'fr',
+            'es',
+            'pt',
             'it',
             'nl',
-            'pt',
-            # 'xx',
+            'el',
+            'nb',
+            'lt',
         ]
         if USE_SPACY_UDPIPE:
             L += list(DUDPipeLangs.keys())
@@ -80,6 +84,22 @@ class SpacyPOS(EngineBase):
 
 
 if __name__ == '__main__':
+    from spacy import download
+    """
+    python -m spacy download en_core_web_sm
+    python -m spacy download de_core_news_sm
+    python -m spacy download fr_core_news_sm
+    python -m spacy download es_core_news_sm
+    python -m spacy download pt_core_news_sm
+    python -m spacy download it_core_news_sm
+    python -m spacy download nl_core_news_sm
+    python -m spacy download el_core_news_sm
+    python -m spacy download nb_core_news_sm
+    python -m spacy download lt_core_news_sm
+    
+    Check https://spacy.io/usage/models
+    """
+
     for x in range(100):
         doc = ' Here, men are promoted and women can visit the catalog.'
 

@@ -14,6 +14,10 @@ class StanfordNLPPOS(EngineBase):
     def __init__(self, pos_taggers):
         EngineBase.__init__(self, pos_taggers)
 
+    def download_engine(self, iso):
+        # TODO!!!
+        stanfordnlp.download(iso, force=False)
+
     def is_iso_supported(self, iso):
         return iso in self.get_L_supported_isos()
 
@@ -55,10 +59,20 @@ class StanfordNLPPOS(EngineBase):
 
 
 if __name__ == '__main__':
-    if False:
-        for iso in get_L_supported_isos():
+    if True:
+        from glob import glob
+        import stanfordnlp
+        from os.path import expanduser, exists
+
+        for iso in StanfordNLPPOS.get_L_supported_isos(None):
+            if glob(expanduser(f'~/stanfordnlp_resources/{iso}_*models')):
+                print("SKIPPING:", iso)
+                continue
+
             print("DOWNLOADING:", iso)
-            stanfordnlp.download(iso, force=True)
+            stanfordnlp.download(
+                iso, force=True, confirm_if_exists=True
+            )
     else:
         for x in range(100):
             for LSentence in (

@@ -135,6 +135,17 @@ class CubeNLPPOS(EngineBase):
 
 
 if __name__ == '__main__':
+    if True:
+        found_nl = False
+        for iso in CubeNLPPOS.get_L_supported_isos(None):
+            if iso not in ('nno', 'nnb'):
+                continue
+
+            from cube.api import Cube  # import the Cube object
+
+            cube = Cube(verbose=True)  # initialize it
+            cube.load(DSupportedISOs[iso])
+
     print_pos('id', 'Tahap pertama konflik ini dapat disebut "Perang Kemerdekaan Belanda".')
     print_pos('en', 'The first phase of the conflict can be considered the Dutch War of Independence.')
 
