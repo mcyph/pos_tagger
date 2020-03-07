@@ -1,6 +1,6 @@
 # TODO: Support the jieba segmentation module!
-#from jieba_hant import posseg as posseg_hant
 from pos_tagger.consts import CubeItem
+from pos_tagger.engines.EngineBase import EngineBase
 
 # TODO: USE https://gist.github.com/luw2007/6016931   !!!
 
@@ -34,10 +34,12 @@ DJiebaToCube = {
     'nt': 'ORGNOUN',
     'nz': 'PROPN', # HACK!
     'nrt': 'NOUN', # ????
+    'nrfg': 'NOUN', # ????
     'o': 'ONOM',
     'p': 'PREP',
     'q': 'QUANT',
     'r': 'PRON',
+    'rg': 'PRON', # ????
     'rz': 'PRON', # ????
     'rr': 'PROM', # ???
     's': 'PUNCT', # Space
@@ -107,33 +109,44 @@ un	未知词	不可识别词及用户自定义词组。取英文Unkonwn首两个
 """
 
 
-def get_L_sentences(iso, s):
-    LRtn = []
-    from jieba_fast import posseg as posseg_hans
+class JiebaPOS(EngineBase):
+    TYPE = 1
+    NEEDS_GPU = False
 
-    if iso == 'zh_Hant':
-        callable = posseg_hans.cut
-    elif iso == 'zh':
-        callable = posseg_hans.cut
-    else:
-        raise Exception("Unknown ISO code: %s" % iso)
+    def __init__(self, pos_taggers):
+        EngineBase.__init__(self, pos_taggers)
 
-    L = list(callable(s))
+    def is_iso_supported(self, iso):
+        return iso in ('zh', 'zh_Hant')
 
-    for i, (segment, pos) in enumerate(L, start=1):
-        LRtn.append(CubeItem(
-            index=i,
-            word=segment.replace('_', ' '),
-            lemma=segment.replace('_', ' '),
-            upos=DJiebaToCube[pos],
-            xpos='',
-            attrs='',
-            head='',
-            label='',
-            space_after='SpaceAfter=No'
-        ))
+    def get_L_supported_isos(self):
+        return ['zh', 'zh_Hant']
 
-    return [LRtn]
+    def get_L_sentences(self, iso, s):
+        LRtn = []
+        from jieba_fast import posseg as posseg_hans
+
+        if iso == 'zh_Hant':
+            callable = posseg_hans.cut
+        elif iso == 'zh':
+            callable = posseg_hans.cut
+        else:
+            raise Exception("Unknown ISO code: %s" % iso)
+
+        L = list(callable(s))
+        for i, (segment, pos) in enumerate(L, start=1):
+            LRtn.append(CubeItem(
+                index=i,
+                word=segment.replace('_', ' '),
+                lemma=segment.replace('_', ' '),
+                upos=DJiebaToCube[pos],
+                xpos='',
+                attrs='',
+                head='',
+                label='',
+                space_after='SpaceAfter=No'
+            ))
+        return [LRtn]
 
 
 if __name__ == '__main__':

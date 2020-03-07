@@ -1,5 +1,8 @@
 # PyKomoran 불러오기
+from _thread import get_ident
 from pos_tagger.consts import CubeItem
+from pos_tagger.engines.EngineBase import EngineBase
+
 
 
 """
@@ -98,52 +101,65 @@ DKomoranToUD = {
 }
 
 
-# TODO: WHAT ABOUT THREAD SAFETY??? ==================================================================
 # Komoran 객체 생성
 DKomoran = {}
-from _thread import get_ident
 
 
-def get_L_sentences(s):
-    LRtn = []
+class PyKomoranPOS(EngineBase):
+    TYPE = 2
+    NEEDS_GPU = False
 
-    if not get_ident() in DKomoran:
-        from PyKomoran import Komoran
-        DKomoran[get_ident()] = Komoran("EXP")
+    def __init__(self, pos_taggers):
+        EngineBase.__init__(self, pos_taggers)
 
-    komoran = DKomoran[get_ident()]
-    LTokenList = list(komoran.get_token_list(s))
+    def is_iso_supported(self, iso):
+        return iso == 'ko'
 
-    for i, token in enumerate(LTokenList):
-        segment = s[token.begin_index:token.end_index]
-        pos = token.pos
+    def get_L_supported_isos(self):
+        return ['ko']
 
-        next_token = (
-            LTokenList[i+1]
-            if i != len(LTokenList)-1
-            else None
-        )
-        if next_token:
-            if token.end_index == next_token.begin_index:
-                space_after = 'SpaceAfter=No'
+    def get_L_sentences(self, iso, s):
+        assert iso == 'ko'
+
+        LRtn = []
+
+        if not get_ident() in DKomoran:
+            from PyKomoran import Komoran
+            DKomoran[get_ident()] = Komoran("EXP")  # Memory warning!! =========================================
+
+        komoran = DKomoran[get_ident()]
+        LTokenList = list(komoran.get_token_list(s))
+
+        for i, token in enumerate(LTokenList):
+            segment = s[token.begin_index:token.end_index]
+            pos = token.pos
+
+            next_token = (
+                LTokenList[i+1]
+                if i != len(LTokenList)-1
+                else None
+            )
+            if next_token:
+                if token.end_index == next_token.begin_index:
+                    space_after = 'SpaceAfter=No'
+                else:
+                    space_after = '_'
             else:
-                space_after = '_'
-        else:
-            space_after = 'SpaceAfter=No'
+                space_after = 'SpaceAfter=No'
 
-        LRtn.append(CubeItem(
-            index=i,
-            word=segment.replace('_', ' '),
-            lemma=segment.replace('_', ' '),
-            upos=DKomoranToUD[pos],
-            xpos='',
-            attrs='',
-            head='',
-            label='',
-            space_after=space_after # FIXME!
-        ))
+            LRtn.append(CubeItem(
+                index=i,
+                word=segment.replace('_', ' '),
+                lemma=segment.replace('_', ' '),
+                upos=DKomoranToUD[pos],
+                xpos='',
+                attrs='',
+                head='',
+                label='',
+                space_after=space_after # FIXME!
+            ))
 
-    return [LRtn]
+        return [LRtn]
 
 
 if __name__ == '__main__':

@@ -2,6 +2,7 @@
 #https://pypi.org/project/pyvi/
 
 from pos_tagger.consts import CubeItem
+from pos_tagger.engines.EngineBase import EngineBase
 
 
 """
@@ -47,28 +48,39 @@ DPOSToCube = {
 }
 
 
-def get_L_sentences(s):
-    from pyvi import ViTokenizer, ViPosTagger
-    LSeg, LPOS = ViPosTagger.postagging(
-        ViTokenizer.tokenize(s)
-    )
+class PyViPOS(EngineBase):
+    TYPE = 4
+    NEEDS_GPU = False
 
-    LRtn = []
+    def __init__(self, pos_taggers):
+        EngineBase.__init__(self, pos_taggers)
 
-    for i, (segment, pos) in enumerate(zip(LSeg, LPOS), start=1):
-        LRtn.append(CubeItem(
-            index=i,
-            word=segment.replace('_', ' '),
-            lemma=segment.replace('_', ' '),
-            upos=DPOSToCube[pos],
-            xpos='',
-            attrs='',
-            head='',
-            label='',
-            space_after='_' if i != len(LSeg)-1 else 'SpaceAfter=No'
-        ))
+    def is_iso_supported(self, iso):
+        return iso == 'vi'
 
-    return [LRtn]
+    def get_L_supported_isos(self):
+        return ['vi']
+
+    def get_L_sentences(self, s):
+        from pyvi import ViTokenizer, ViPosTagger
+        LSeg, LPOS = ViPosTagger.postagging(
+            ViTokenizer.tokenize(s)
+        )
+
+        LRtn = []
+        for i, (segment, pos) in enumerate(zip(LSeg, LPOS), start=1):
+            LRtn.append(CubeItem(
+                index=i,
+                word=segment.replace('_', ' '),
+                lemma=segment.replace('_', ' '),
+                upos=DPOSToCube[pos],
+                xpos='',
+                attrs='',
+                head='',
+                label='',
+                space_after='_' if i != len(LSeg)-1 else 'SpaceAfter=No'
+            ))
+        return [LRtn]
 
 
 if __name__ == '__main__':
