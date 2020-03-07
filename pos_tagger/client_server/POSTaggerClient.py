@@ -13,7 +13,6 @@ class POSTaggerClient(POSTaggersBase,
                       ):
 
     def __init__(self, client_provider=None):
-        print("POSTaggerClient __init__:", client_provider)
         if client_provider is None:
             client_provider = SHMClient(srv)
         ClientMethodsBase.__init__(self, client_provider)
