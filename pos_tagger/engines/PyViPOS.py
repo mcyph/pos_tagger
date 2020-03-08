@@ -61,7 +61,7 @@ class PyViPOS(EngineBase):
     def get_L_supported_isos(self):
         return ['vi']
 
-    def get_L_sentences(self, s):
+    def get_L_sentences(self, iso, s):
         from pyvi import ViTokenizer, ViPosTagger
         LSeg, LPOS = ViPosTagger.postagging(
             ViTokenizer.tokenize(s)

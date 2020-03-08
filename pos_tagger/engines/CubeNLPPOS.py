@@ -100,25 +100,25 @@ class CubeNLPPOS(EngineBase):
 
                 self.add_to_cache(iso, cube_inst)
 
-        LSentences = cube_inst(s)
+            LSentences = cube_inst(s)
 
-        LRtn = []
-        for LSentence in LSentences:
-            LItem = []
-            for entry in LSentence:
-                LItem.append(CubeItem(
-                    index=int(entry.index),
-                    word=entry.word,
-                    lemma=entry.lemma,
-                    upos=entry.upos,
-                    xpos=entry.xpos,
-                    attrs=entry.attrs,
-                    head=int(entry.head) if str(entry.head).isnumeric() else '', # CHECK ME!
-                    label=str(entry.label),
-                    space_after=entry.space_after
-                ))
-            LRtn.append(LItem)
-        return LRtn
+            LRtn = []
+            for LSentence in LSentences:
+                LItem = []
+                for entry in LSentence:
+                    LItem.append(CubeItem(
+                        index=int(entry.index),
+                        word=entry.word,
+                        lemma=entry.lemma,
+                        upos=entry.upos,
+                        xpos=entry.xpos,
+                        attrs=entry.attrs,
+                        head=int(entry.head) if str(entry.head).isnumeric() else '', # CHECK ME!
+                        label=str(entry.label),
+                        space_after=entry.space_after
+                    ))
+                LRtn.append(LItem)
+            return LRtn
 
     def print_pos(self, iso, s):
         LSentences = self.get_L_sentences(iso, s)

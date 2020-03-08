@@ -15,6 +15,20 @@ DNLP = {}
 check_nlp_lock = allocate_lock()
 
 
+DSpacy = {
+    'en': 'en_core_web_sm',
+    'de': 'de_core_news_sm',
+    'fr': 'fr_core_news_sm',
+    'es': 'es_core_news_sm',
+    'pt': 'pt_core_news_sm',
+    'it': 'it_core_news_sm',
+    'nl': 'nl_core_news_sm',
+    'el': 'el_core_news_sm',
+    'nb': 'nb_core_news_sm',
+    'lt': 'lt_core_news_sm',
+}
+
+
 class SpacyPOS(EngineBase):
     TYPE = 5
     NEEDS_GPU = False
@@ -29,18 +43,7 @@ class SpacyPOS(EngineBase):
         return iso in self.get_L_supported_isos()
 
     def get_L_supported_isos(self):
-        L = [
-            'en',
-            'de',
-            'fr',
-            'es',
-            'pt',
-            'it',
-            'nl',
-            'el',
-            'nb',
-            'lt',
-        ]
+        L = list(DSpacy.keys())
         if USE_SPACY_UDPIPE:
             L += list(DUDPipeLangs.keys())
         return L
@@ -60,27 +63,27 @@ class SpacyPOS(EngineBase):
                     import spacy_udpipe
                     nlp = spacy_udpipe.load(iso)
                 else:
-                    nlp = spacy.load(iso)
+                    nlp = spacy.load(DSpacy[iso])
                 self.add_to_cache(iso, nlp)
 
-        LRtn = []
-        LTokens = list(nlp(s))
+            LRtn = []
+            LTokens = list(nlp(s))
 
-        for i, token in enumerate(LTokens, start=1):
-            #print(token.head, token.whitespace_, token.n_lefts, token.n_rights, token.sentiment, token.shape, dir(token), dir(token.head))
-            # TODO: FIX space after!!!
-            LRtn.append(CubeItem(
-                index=i,
-                word=token.text,
-                lemma=token.lemma_,
-                upos=token.pos_,
-                xpos=token.tag_, # TODO: WHERE SHOULD THIS GO??
-                attrs=token.dep,
-                head=int(token.head.i)+1 if token.head else '',
-                label='',
-                space_after='_' if token.whitespace_ else 'SpaceAfter=No'
-            ))
-        return [LRtn]
+            for i, token in enumerate(LTokens, start=1):
+                #print(token.head, token.whitespace_, token.n_lefts, token.n_rights, token.sentiment, token.shape, dir(token), dir(token.head))
+                # TODO: FIX space after!!!
+                LRtn.append(CubeItem(
+                    index=i,
+                    word=token.text,
+                    lemma=token.lemma_,
+                    upos=token.pos_,
+                    xpos=token.tag_, # TODO: WHERE SHOULD THIS GO??
+                    attrs=token.dep,
+                    head=int(token.head.i)+1 if token.head else '',
+                    label='',
+                    space_after='_' if token.whitespace_ else 'SpaceAfter=No'
+                ))
+            return [LRtn]
 
 
 if __name__ == '__main__':

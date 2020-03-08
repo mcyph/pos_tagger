@@ -34,28 +34,28 @@ class StanfordNLPPOS(EngineBase):
                 nlp = stanfordnlp.Pipeline(
                     lang=iso,
                     processors="tokenize,pos,depparse,lemma,mwt",
-                    use_gpu=self.use_gpu
+                    use_gpu=False #self.use_gpu
                 )
                 self.add_to_cache(iso, nlp)
 
-        LRtn = []
-        doc = nlp(s)
-        for sent in doc.sentences:
-            LSentence = []
-            for word in sent.words:
-                LSentence.append(CubeItem(
-                    index=int(word.index),
-                    word=word.text,
-                    lemma=word.lemma,
-                    upos=word.upos,
-                    xpos=word.xpos,
-                    attrs=word.feats,
-                    head=int(word.governor) if str(word.governor).isnumeric() else '',  # CHECK ME!
-                    label=word.dependency_relation, # THIS IS PROBABKLY INCORRECT!
-                    space_after='_'  # FIXME!!!!
-                ))
-            LRtn.append(LSentence)
-        return LRtn
+            LRtn = []
+            doc = nlp(s)
+            for sent in doc.sentences:
+                LSentence = []
+                for word in sent.words:
+                    LSentence.append(CubeItem(
+                        index=int(word.index),
+                        word=word.text,
+                        lemma=word.lemma,
+                        upos=word.upos,
+                        xpos=word.xpos,
+                        attrs=word.feats,
+                        head=int(word.governor) if str(word.governor).isnumeric() else '',  # CHECK ME!
+                        label=word.dependency_relation, # THIS IS PROBABKLY INCORRECT!
+                        space_after='_'  # FIXME!!!!
+                    ))
+                LRtn.append(LSentence)
+            return LRtn
 
 
 if __name__ == '__main__':
