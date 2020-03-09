@@ -28,6 +28,15 @@ Installation
 
 TODO!
 
+============
+TODO
+============
+
+* Provide testing to make sure things are setup correctly, turning off engines which aren't functioning (machine learning setups can be complex, and components can conflict or be difficult to setup, so better partially working than not at all!)
+* Allow downloading of models (either on-demand or explicitly).
+* Add support for MeCab (Japanese)
+* Add support for selecting models by license (LGPL/CC-BY/CC-BY-NC) etc
+
 =====================
 Bugs/Feature Requests
 =====================
