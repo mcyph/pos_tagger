@@ -1,13 +1,13 @@
 from collections import OrderedDict
 
 from pos_tagger.abstract_base_classes.POSTaggersBase import POSTaggersBase
-from pos_tagger.engines.CubeNLPPOS import CubeNLPPOS
-from pos_tagger.engines.JiebaPOS import JiebaPOS
-from pos_tagger.engines.PyKomoranPOS import PyKomoranPOS
-from pos_tagger.engines.PyThaiNLPPOS import PyThaiNLPPOS
-from pos_tagger.engines.PyViPOS import PyViPOS
-from pos_tagger.engines.SpacyPOS import SpacyPOS
-from pos_tagger.engines.StanfordNLPPOS import StanfordNLPPOS
+from pos_tagger.engines.cubenlp_pos.CubeNLPPOS import CubeNLPPOS
+from pos_tagger.engines.jieba_pos.JiebaPOS import JiebaPOS
+from pos_tagger.engines.pykomoran_pos.PyKomoranPOS import PyKomoranPOS
+from pos_tagger.engines.pythainlp_pos.PyThaiNLPPOS import PyThaiNLPPOS
+from pos_tagger.engines.pyvi_pos.PyViPOS import PyViPOS
+from pos_tagger.engines.spacy_pos.SpacyPOS import SpacyPOS
+from pos_tagger.engines.stanfordnlp_pos.StanfordNLPPOS import StanfordNLPPOS
 
 
 class POSTaggers(POSTaggersBase):
@@ -56,10 +56,10 @@ class POSTaggers(POSTaggersBase):
 
         if self.use_gpu:
             # Next add stanford NLP
-            for _iso in stanfordnlp_pos.get_L_supported_isos():
-                if _iso in DGetLSentences:
-                    continue
-                DGetLSentences[_iso] = stanfordnlp_pos
+            #for _iso in stanfordnlp_pos.get_L_supported_isos():
+            #    if _iso in DGetLSentences:
+            #        continue
+            #    DGetLSentences[_iso] = stanfordnlp_pos
 
                 #if _iso == 'zh':
                 #    # We'll try traditional chinese as well

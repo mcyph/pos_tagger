@@ -8,7 +8,7 @@ check_nlp_lock = allocate_lock()
 
 
 class StanfordNLPPOS(EngineBase):
-    TYPE = 6
+    TYPE = 10
     NEEDS_GPU = True
 
     def __init__(self, pos_taggers):
