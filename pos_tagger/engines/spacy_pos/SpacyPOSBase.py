@@ -1,52 +1,26 @@
 # Add support for https://spacy.io/
+from abc import ABC, abstractmethod
 from _thread import allocate_lock
 from pos_tagger.consts import CubeItem
 from pos_tagger.engines.EngineBase import EngineBase
-
-USE_SPACY_UDPIPE = False
-
-if USE_SPACY_UDPIPE:
-    from pos_tagger.engines.spacy_udpipe_langs import get_D_udpipe_langs
-    DUDPipeLangs = get_D_udpipe_langs()
-else:
-    DUDPipeLangs = {}
 
 DNLP = {}
 check_nlp_lock = allocate_lock()
 
 
-DSpacy = {
-    'en': 'en_core_web_sm',
-    'de': 'de_core_news_sm',
-    'fr': 'fr_core_news_sm',
-    'es': 'es_core_news_sm',
-    'pt': 'pt_core_news_sm',
-    'it': 'it_core_news_sm',
-    'nl': 'nl_core_news_sm',
-    'el': 'el_core_news_sm',
-    'nb': 'nb_core_news_sm',
-    'lt': 'lt_core_news_sm',
-}
-
-
-class SpacyPOS(EngineBase):
-    TYPE = 5
+class SpacyPOSBase(EngineBase):
+    TYPE = None
     NEEDS_GPU = False
 
     def __init__(self, pos_taggers):
         EngineBase.__init__(self, pos_taggers)
 
-    def download_engine(self):
-        TODO
-
     def is_iso_supported(self, iso):
         return iso in self.get_L_supported_isos()
 
+    @abstractmethod
     def get_L_supported_isos(self):
-        L = list(DSpacy.keys())
-        if USE_SPACY_UDPIPE:
-            L += list(DUDPipeLangs.keys())
-        return L
+        pass
 
     def get_L_sentences(self, iso, s):
         with check_nlp_lock:
@@ -58,12 +32,7 @@ class SpacyPOS(EngineBase):
                     # TODO: Support different GPU ids??
                     spacy.require_gpu()
 
-                if iso in DUDPipeLangs:
-                    # UDPipe ones seem to be more accurate a lot of the time
-                    import spacy_udpipe
-                    nlp = spacy_udpipe.load(iso)
-                else:
-                    nlp = spacy.load(DSpacy[iso])
+                nlp = self._get_model(iso)
                 self.add_to_cache(iso, nlp)
 
             LRtn = []
@@ -85,24 +54,16 @@ class SpacyPOS(EngineBase):
                 ))
             return [LRtn]
 
+    @abstractmethod
+    def _download_engine(self, iso):
+        pass
+
+    @abstractmethod
+    def _get_model(self, iso):
+        pass
+
 
 if __name__ == '__main__':
-    from spacy import download
-    """
-    python -m spacy download en_core_web_sm
-    python -m spacy download de_core_news_sm
-    python -m spacy download fr_core_news_sm
-    python -m spacy download es_core_news_sm
-    python -m spacy download pt_core_news_sm
-    python -m spacy download it_core_news_sm
-    python -m spacy download nl_core_news_sm
-    python -m spacy download el_core_news_sm
-    python -m spacy download nb_core_news_sm
-    python -m spacy download lt_core_news_sm
-    
-    Check https://spacy.io/usage/models
-    """
-
     for x in range(100):
         doc = ' Here, men are promoted and women can visit the catalog.'
 
