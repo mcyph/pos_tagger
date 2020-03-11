@@ -38,6 +38,11 @@ class SpacyUDPOS(SpacyPOSBase):
             include_gpl=INCLUDE_GPL
         )[0].model_name
 
+        # If engine already downloaded+trained, don't do it again!
+        engine_path = f'{MODELS_DIR}/models/{model_name}/model-best'
+        if exists(engine_path):
+            return
+
         # Make the output dirs
         if not exists(f'{MODELS_DIR}/json_out'):
             makedirs(f'{MODELS_DIR}/json_out')
@@ -51,10 +56,8 @@ class SpacyUDPOS(SpacyPOSBase):
                    f"https://github.com/UniversalDependencies/UD_{model_name} "
                    f"{git_repo_path}")
 
-        # Get the train/dev filenames
-        print(model_name, git_repo_path)
-
         try:
+            # Get the train/dev filenames
             conllu_train_fnam, conllu_dev_fnam = self.__get_train_dev_fnams(
                 git_repo_path
             )
@@ -124,7 +127,6 @@ class SpacyUDPOS(SpacyPOSBase):
             f.write(json.dumps(LDev))
 
         return conllu_train_fnam, conllu_dev_fnam
-
 
     def __get_train_dev_fnams(self, git_repo_path):
         conllu_train_fnam = glob(
