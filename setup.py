@@ -66,12 +66,17 @@ setup(
         'pyvi',
         'pythainlp', 'pandas',
         'nlpcube',
+        'jieba',  # as spacy might need it
         'jieba-fast',
         'spacy',
         'spacy-udpipe',
         'stanfordnlp',
         'PyKomoran',
         'pymorphy2',
+
+        'mecab-python3',
+        'natto-py',
+        'fugashi',
     ],
 
     package_data={

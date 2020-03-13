@@ -22,6 +22,9 @@ Requirements
 
 TODO!
 
+apt install natto mecab-ko mecab-ko-dic
+natto-py
+
 ============
 Installation
 ============

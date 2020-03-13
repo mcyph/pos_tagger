@@ -260,7 +260,16 @@ _DPreferredCommercial = {
     'ko': 'Korean-Kaist',
     'en': 'English-EWT', # Note the models differ quite a lot!
     'fr': 'French-GSD',
-    'ro': 'Romanian-RRT',
+    # Seems there's an exception when Romanian-RRT is used:
+    # ValueError: [E167] Unknown morphological feature:
+    # 'Case' (8245304235865630608).
+    # This can happen if the tagger was trained with a different set of
+    # morphological features. If you're using a pretrained model,
+    # make sure that your models are up to date:
+    # python -m spacy validate
+    # I've changed to "Nonstandard" for now which includes the Bible and
+    # poetry as bases, not sure how well it works on general texts
+    'ro': 'Romanian-Nonstandard', #'Romanian-RRT',
     'es': 'Spanish-GSD',
     'no': 'Norwegian-Nynorsk', # ???
     'nn': 'Norwegian-Nynorsk',
