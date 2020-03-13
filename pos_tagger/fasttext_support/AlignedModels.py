@@ -7,123 +7,163 @@ TODO: Use https://fasttext.cc/docs/en/aligned-vectors.html
 * Output relative word probabilities
 """
 import numpy as np
-from collections import namedtuple
-
-WordEmbeddings = namedtuple('WordEmbeddings', [
-    'DFreqs', 'DFreqsToWord', 'LVectors'
-])
 
 
-def get_D_word_embeddings(path):
-    DWords = {}
-    DFreqs = {}
-    DFreqsToWord = {}
+class AlignedVectors:
+    def __init__(self, path):
+        self.DFreqs, self.DFreqsToWord, self.LVectors = \
+            self.__get_D_word_embeddings(path)
 
-    with open(path, 'r', encoding='utf-8') as f:
-        for x, line in enumerate(f):
-            values = line.rstrip().rsplit(' ')
-            word = values[0]
-            coefs = np.asarray(values[1:], dtype='float32')
-            DWords[word] = coefs
-            DFreqs[word] = x  # More common words might be higher up(?)
-            DFreqsToWord[x] = word
+    #====================================================================#
+    #                             Load Data                              #
+    #====================================================================#
 
-            if x % 1000 == 0:
-                print(x)
+    def __get_D_word_embeddings(self, path):
+        DWords = {}  # Note this isn't stored in `self`
+        DFreqs = {}
+        DFreqsToWord = {}
 
-            #if x > 20000:
-            #    break
+        with open(path, 'r', encoding='utf-8') as f:
+            for x, line in enumerate(f):
+                values = line.rstrip().rsplit(' ')
+                word = values[0]
+                coefs = np.asarray(values[1:], dtype='float32')
+                DWords[word] = coefs
+                DFreqs[word] = x  # More common words might be higher up(?)
+                DFreqsToWord[x] = word
 
-    a = np.ndarray(
-        shape=(
-            len(DWords),
-            len(DWords[word])
-        ),
-        dtype='float32'
-    )
-    for word, vec in DWords.items():
-        # Note the frequency is the actual index
-        a[DFreqs[word], :] = vec
-    return WordEmbeddings(DFreqs, DFreqsToWord, a)
+                if x % 1000 == 0:
+                    print(x)
 
+                if x > 20000:
+                    break
 
-ENGLISH = get_D_word_embeddings(
-    '/mnt/docs/dev/data/fast_text/aligned_word_vectors/wiki.en.align.vec'
-)
-CHINESE = get_D_word_embeddings(
-    '/mnt/docs/dev/data/fast_text/aligned_word_vectors/wiki.zh.align.vec'
-)
-INDONESIAN = get_D_word_embeddings(
-    '/mnt/docs/dev/data/fast_text/aligned_word_vectors/wiki.id.align.vec'
-)
-GERMAN = get_D_word_embeddings(
-    '/mnt/docs/dev/data/fast_text/aligned_word_vectors/wiki.de.align.vec'
-)
+        a = np.ndarray(
+            shape=(
+                len(DWords),
+                len(DWords[word])
+            ),
+            dtype='float32'
+        )
+        for word, vec in DWords.items():
+            # NOTE: the index is also the frequency of the word
+            #   (with 0 being the most common), as the files
+            #   are sorted in order of most to least common
+            a[DFreqs[word], :] = vec
+        return DFreqs, DFreqsToWord, a
 
+    #====================================================================#
+    #                              Getters                               #
+    #====================================================================#
 
-def get_L_cands(word_embeddings, find_me):
-    LCands = word_embeddings.LVectors - find_me
-    LCands = np.sum(np.abs(LCands), axis=1)
-    LSmallestIdx = np.argpartition(LCands, 30)[:30]  # ???
+    def __iter__(self):
+        for x, vec in enumerate(self.LVectors):
+            yield x, self.DFreqsToWord[x], vec
 
-    LRtn = []
-    for idx in LSmallestIdx:
-        # (score, frequency/ID)
-        LRtn.append((LCands[idx], word_embeddings.DFreqsToWord[idx]))
-    LRtn.sort()
-    return LRtn
+    def word_index_to_word(self, word_index):
+        """
+        
+        """
+        return self.DFreqsToWord[word_index]
 
+    def word_to_word_index(self, word):
+        return self.DFreqs[word]
 
-def print_translations(word_embeddings, s):
-    find_me = ENGLISH.LVectors[ENGLISH.DFreqs[s]]
-    eng_freq = ENGLISH.DFreqs[s]
-    LCands = get_L_cands(word_embeddings, find_me)
+    def get_vector_for_word(self, word):
+        return self.LVectors[
+            self.word_to_word_index(word)
+        ]
 
-    LLikely = []
-    LUnlikely = []
+    #====================================================================#
+    #                  Find Translations/Similar Words                   #
+    #====================================================================#
 
-    def do_print(L):
-        for score, cand in L:
-            print(
-                score, cand,
-                f"English Freq: "
-                f"{ENGLISH.DFreqs[s]}/{len(ENGLISH.DFreqs)}",
-                f"Other Freq: "
-                f"{word_embeddings.DFreqs[cand]}/{len(word_embeddings.DFreqs)}"
-            )
+    def get_similar_words(self, find_me, n=30):
+        """
+        Given a input vector for a given word,
+        get the most similar words.
 
-    # Really uncommon words are
-    # lower quality and likely junk
-    for score, cand in LCands:
-        freq = word_embeddings.DFreqs[cand]
+        :param find_me: a vector found using get_vector_for_word()
+        """
+        LCands = self.LVectors - find_me
+        LCands = np.sum(np.abs(LCands), axis=1)
+        LSmallestIdx = np.argpartition(LCands, n)[:n]
 
-        if freq > min(eng_freq, 2000)**1.3:
-            # It should be pretty unlikely that the frequency in English
-            # is an order of magnitude higher in the other language
+        LRtn = []
+        for idx in LSmallestIdx:
+            # (score, word_index/frequency)
+            LRtn.append((LCands[idx], self.word_index_to_word(idx)))
+        LRtn.sort()
+        return LRtn
 
-            # (OPEN ISSUE: Perhaps it could be argued, very common words
-            #  in one language may not be the best candidate for
-            #  uncommon words?)
-            LUnlikely.append((score, cand))
-        else:
-            LLikely.append((score, cand))
+    def get_translations(self, other_aligned_vectors_inst, s):
+        find_me = self.get_vector_for_word(s)
+        LCands = other_aligned_vectors_inst.get_similar_words(find_me)
+        return LCands
 
-    print("==Likely candidates==")
-    do_print(LLikely)
-    print("==Unlikely candidates==")
-    do_print(LUnlikely)
+    def print_translations(self, other_aligned_vectors_inst, s):
+        LCands = self.get_translations(
+            other_aligned_vectors_inst, s
+        )
+        LLikely = []
+        LUnlikely = []
+
+        eng_freq = self.DFreqs[s]
+
+        def do_print(L):
+            for score, cand in L:
+                print(
+                    score, cand,
+                    f"English Freq: "
+                    f"{self.DFreqs[s]}/{len(self.DFreqs)}",
+                    f"Other Freq: "
+                    f"{other_aligned_vectors_inst.DFreqs[cand]}/"
+                    f"{len(other_aligned_vectors_inst.DFreqs)}"
+                )
+
+        # Really uncommon words are
+        # lower quality and likely junk
+        for score, cand in LCands:
+            freq = other_aligned_vectors_inst.word_to_word_index(cand)
+
+            if freq > min(eng_freq, 2000) * 6:
+                # It should be pretty unlikely that the word_index in English
+                # is an order of magnitude higher in the other language
+
+                # (OPEN ISSUE: Perhaps it could be argued, very common words
+                #  in one language may not be the best candidate for
+                #  uncommon words?)
+                LUnlikely.append((score, cand))
+            else:
+                LLikely.append((score, cand))
+
+        print("==Likely candidates==")
+        do_print(LLikely)
+        print("==Unlikely candidates==")
+        do_print(LUnlikely)
+
+    #====================================================================#
+    #                        Sentence Alignment                          #
+    #====================================================================#
+
+    def align_sentences(self,
+                        from_iso, to_iso,
+                        from_s, to_s):
+        pass
 
 
 if __name__ == '__main__':
-    #print_translations('cat')
-    #print_translations('king')
-    #print_translations('queen')
+    BASE_PATH = '/mnt/docs/dev/data/fast_text/aligned_word_vectors'
+    ENGLISH = AlignedVectors(f'{BASE_PATH}/wiki.en.align.vec')
+    CHINESE = AlignedVectors(f'{BASE_PATH}/wiki.zh.align.vec')
+    INDONESIAN = AlignedVectors(f'{BASE_PATH}/wiki.id.align.vec')
+    GERMAN = AlignedVectors(f'{BASE_PATH}/wiki.de.align.vec')
 
     while True:
         find_me = input("Enter a word to find:")
         try:
-            print_translations(CHINESE, find_me)
-            print_translations(INDONESIAN, find_me)
-            print_translations(GERMAN, find_me)
+            ENGLISH.print_translations(CHINESE, find_me)
+            ENGLISH.print_translations(INDONESIAN, find_me)
+            ENGLISH.print_translations(GERMAN, find_me)
         except KeyError:
             print(f"{find_me} was not found")
