@@ -3,7 +3,7 @@ from speedysvc.client_server.shared_memory.SHMClient import SHMClient
 from speedysvc.client_server.base_classes.ClientMethodsBase import ClientMethodsBase
 
 from pos_tagger.abstract_base_classes.POSTaggersBase import POSTaggersBase
-from pos_tagger.client_server.POSTaggerServer import POSTaggerServer as srv
+from pos_tagger.client_server.POSTaggerServer import CPUPOSTaggerServer as srv
 from pos_tagger.consts import CubeItem, AlignedCubeItem
 
 
@@ -36,6 +36,18 @@ class POSTaggerClient(POSTaggersBase,
 
     def get_L_supported_isos(self):
         return self.send(srv.get_L_supported_isos, [])
+
+    def is_alignment_supported(self, from_iso, to_iso):
+        return self.send(srv.is_alignment_supported, [
+            from_iso, to_iso
+        ])
+
+    def get_aligned_sentences(self,
+                              from_iso, to_iso,
+                              from_s, to_s):
+        return self.send(srv.get_aligned_sentences, [
+            from_iso, to_iso, from_s, to_s
+        ])
 
 
 if __name__ == '__main__':

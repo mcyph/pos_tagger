@@ -1,3 +1,4 @@
+from os.path import exists
 from collections import OrderedDict
 
 from pos_tagger.abstract_base_classes.POSTaggersBase import POSTaggersBase
@@ -118,6 +119,14 @@ class POSTaggers(POSTaggersBase):
 
     def get_L_sentences(self, iso, s):
         return self.DGetLSentences[iso].get_L_sentences(iso, s)
+
+    def is_alignment_supported(self, from_iso, to_iso):
+        return (
+            self.is_iso_supported(from_iso) and
+            self.is_iso_supported(to_iso) and
+            exists(f'{BASE_PATH}/wiki.{from_iso}.align.vec') and
+            exists(f'{BASE_PATH}/wiki.{to_iso}.align.vec')
+        )
 
     def get_aligned_sentences(self,
                               from_iso, to_iso,
