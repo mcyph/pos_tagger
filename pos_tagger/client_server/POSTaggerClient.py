@@ -21,15 +21,7 @@ class POSTaggerClient(POSTaggersBase,
         LRtn = self.send(
             srv.get_L_sentences, [iso, s]
         )
-        n_LRtn = []
-        for LSentence in LRtn:
-            LSentence = [
-                CubeItem(*i) if len(i) == len(CubeItem._fields)
-                else AlignedCubeItem(*i)
-                for i in LSentence
-            ]
-            n_LRtn.append(LSentence)
-        return n_LRtn
+        return self.__deserialize_cube_item(LRtn)
 
     def is_iso_supported(self, iso):
         return self.send(srv.is_iso_supported, [iso])
@@ -45,9 +37,23 @@ class POSTaggerClient(POSTaggersBase,
     def get_aligned_sentences(self,
                               from_iso, to_iso,
                               from_s, to_s):
-        return self.send(srv.get_aligned_sentences, [
+        L1, L2 = self.send(srv.get_aligned_sentences, [
             from_iso, to_iso, from_s, to_s
         ])
+        L1 = self.__deserialize_cube_item(L1)
+        L2 = self.__deserialize_cube_item(L2)
+        return L1, L2
+
+    def __deserialize_cube_item(self, LRtn):
+        n_LRtn = []
+        for LSentence in LRtn:
+            LSentence = [
+                CubeItem(*i) if len(i) == len(CubeItem._fields)
+                else AlignedCubeItem(*i)
+                for i in LSentence
+            ]
+            n_LRtn.append(LSentence)
+        return n_LRtn
 
 
 if __name__ == '__main__':
