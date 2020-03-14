@@ -29,8 +29,7 @@ AlignedCubeItem = namedtuple('AlignedCubeItem', [
     'target_index',
     'source_text',
     'target_text',
-    'score',
-    'color'
+    'score'
 ])
 
 DPOSColours = {

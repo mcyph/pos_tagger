@@ -152,51 +152,16 @@ class POSTaggers(POSTaggersBase):
             [i.word for i in LToCubeItems]
         )
 
-        DColors = {}
-        LColors = [
-            'slateBlue',
-            'seaGreen',
-            'saddleBrown',
-            'rebeccaPurple',
-            'navy',
-            'maroon',
-            'indigo',
-            'forestGreen',
-            'darkSlateGray',
-            'darkOliveGreen',
-            'darkRed',
-            'darkMagenta',
-            'darkGoldenRod',
-            'darkCyan',
-            'darkOrange',
-            'darkBlue'
-        ]
-
         LFromRtn = []
         for from_cube_item, from_aligned in zip(LFromCubeItems, LFromAligned):
             D = from_cube_item._asdict()
             D.update(from_aligned._asdict())
-
-            if D['target_index'] is not None:
-                D['color'] = LColors[0]
-                del LColors[0]
-                LColors.append(D['color'])
-                DColors[D['source_index'], D['target_index']] = D['color']
-            else:
-                D['color'] = None
-
             LFromRtn.append(AlignedCubeItem(**D))
 
         LToRtn = []
         for to_cube_item, to_aligned in zip(LToCubeItems, LToAligned):
             D = to_cube_item._asdict()
             D.update(to_aligned._asdict())
-
-            if D['target_index'] is not None:
-                D['color'] = DColors[D['target_index'], D['source_index']]
-            else:
-                D['color'] = None
-
             LToRtn.append(AlignedCubeItem(**D))
         return LFromRtn, LToRtn
 
