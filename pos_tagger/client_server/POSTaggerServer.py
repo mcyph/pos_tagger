@@ -1,19 +1,20 @@
+from pos_tagger.POSTaggers import POSTaggers
+
 from speedysvc.rpc_decorators import json_method
 from speedysvc.client_server.base_classes.ServerMethodsBase import ServerMethodsBase
 
 
-class POSTaggerServer(ServerMethodsBase):
+class CPUPOSTaggerServer(ServerMethodsBase):
     port = 40519
     name = 'postag'
 
-    def __init__(self, logger_client):
+    def __init__(self, logger_client, use_gpu=False):
         """
         A server which e.g. allows putting the POS Tagger on
         a server which has a GPU for POS tagging acceleration
         """
         ServerMethodsBase.__init__(self, logger_client)
-        from pos_tagger.POSTaggers import POSTaggers
-        self.pos_taggers = POSTaggers()
+        self.pos_taggers = POSTaggers(use_gpu=use_gpu)
 
     @json_method
     def get_L_sentences(self, iso, s):
@@ -26,3 +27,22 @@ class POSTaggerServer(ServerMethodsBase):
     @json_method
     def get_L_supported_isos(self):
         return self.pos_taggers.get_L_supported_isos()
+
+    @json_method
+    def is_alignment_supported(self, from_iso, to_iso):
+        return self.pos_taggers.is_alignment_supported(
+            from_iso, to_iso
+        )
+
+    @json_method
+    def get_aligned_sentences(self,
+                              from_iso, to_iso,
+                              from_s, to_s):
+        return self.pos_taggers.get_aligned_sentences(
+            from_iso, to_iso, from_s, to_s
+        )
+
+
+class GPUPOSTaggerServer(CPUPOSTaggerServer):
+    def __init__(self, logger_client, use_gpu=True):
+        CPUPOSTaggerServer.__init__(self, logger_client, use_gpu)

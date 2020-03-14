@@ -103,6 +103,9 @@ DKomoranToUD = {
 
 # Komoran 객체 생성
 DKomoran = {}
+MAX_CACHED_INSTS = 2  # Not sure how many we can have without
+                      # java.lang.OutOfMemoryError: Java heap space
+                      # occurring
 
 
 class PyKomoranPOS(EngineBase):
@@ -122,6 +125,9 @@ class PyKomoranPOS(EngineBase):
         assert iso == 'ko'
 
         LRtn = []
+        global DKomoran
+        if len(DKomoran) > MAX_CACHED_INSTS:
+            DKomoran = {}
 
         if not get_ident() in DKomoran:
             from PyKomoran import Komoran

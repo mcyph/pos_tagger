@@ -13,6 +13,25 @@ CubeItem = namedtuple('CubeItem', [
     'space_after'
 ])
 
+AlignedCubeItem = namedtuple('AlignedCubeItem', [
+    'index',
+    'word',
+    'lemma',
+    'upos',
+    'xpos',
+    'attrs',
+    'head',
+    'label',
+    'space_after',
+
+    # Alignment info
+    'source_index',
+    'target_index',
+    'source_text',
+    'target_text',
+    'score'
+])
+
 DPOSColours = {
     'AUX': 'yellow',  # e.g. can
     'ADP': 'yellow',  # adposition, e.g. of

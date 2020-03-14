@@ -15,7 +15,7 @@ class PyThaiNLPPOS(EngineBase):
     def get_L_supported_isos(self):
         return ['th']
 
-    def get_L_sentences(self, s):
+    def get_L_sentences(self, iso, s):
         from pythainlp import word_tokenize
         from pythainlp.tag import pos_tag  # , pos_tag_sents
 
