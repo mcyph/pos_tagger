@@ -22,11 +22,10 @@ AlignedItem = namedtuple('AlignedItem', [
     'score'
 ])
 
-
 def align_sentences(from_inst, to_inst,
                     from_s, to_s,
                     ignore_stop_words=True,
-                    tolerance=1.18): # 1.24
+                    tolerance=1.5): # 1.18, 1.24
 
     if ignore_stop_words:
         SFromStopWords = get_S_stop_words_for_iso(from_inst.iso)
@@ -133,11 +132,11 @@ def align_sentences(from_inst, to_inst,
     for x, from_token in enumerate(LFromTokens):
         if x in DFromToMap and DFromToMap[x][-1] <= smallest*tolerance:
             other_idx, score = DFromToMap[x]
-            LFromRtn.append(AlignedItem(x+1, other_idx+1,
+            LFromRtn.append(AlignedItem(int(x+1), int(other_idx+1),
                                         from_token, LToTokens[other_idx],
-                                        score))
+                                        float(score)))
         else:
-            LFromRtn.append(AlignedItem(x+1, None,
+            LFromRtn.append(AlignedItem(int(x+1), None,
                                         from_token, None,
                                         None))
 
@@ -145,11 +144,11 @@ def align_sentences(from_inst, to_inst,
     for y, to_token in enumerate(LToTokens):
         if y in DToFromMap and DToFromMap[y][-1] <= smallest*tolerance:
             other_idx, score = DToFromMap[y]
-            LToRtn.append(AlignedItem(y+1, other_idx+1,
+            LToRtn.append(AlignedItem(int(y+1), int(other_idx+1),
                                       to_token, LFromTokens[other_idx],
-                                      score))
+                                      float(score)))
         else:
-            LToRtn.append(AlignedItem(y+1, None,
+            LToRtn.append(AlignedItem(int(y+1), None,
                                       to_token, None,
                                       None))
     return LFromRtn, LToRtn
@@ -190,6 +189,11 @@ def smallest_indices(ary, n):
     """
     Returns the n smallest indices from a numpy array.
     """
+    max_num = ary.shape[0]*ary.shape[1]
+    if max_num == 1:
+        return [[0], [0]]
+
+    #n = min(max_num, n)
     flat = ary.flatten()
     indices = np.argpartition(flat, n)[:n] # CHECK ME!!
     indices = indices[np.argsort(flat[indices])]
