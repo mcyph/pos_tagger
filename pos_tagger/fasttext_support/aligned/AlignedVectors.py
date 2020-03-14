@@ -162,11 +162,25 @@ if __name__ == '__main__':
 
     CHINESE = AlignedVectors(f'{BASE_PATH}/wiki.zh.align.vec')
 
-    print(align_sentences(
-        ENGLISH, CHINESE,
+    def print_me(en_text, cn_text):
+        from_tokens, to_tokens = align_sentences(
+            ENGLISH, CHINESE, en_text, cn_text
+        )
+        for item in from_tokens:
+            print(item)
+        print()
+        for item in to_tokens:
+            print(item)
+
+    print_me(
+        'It is used for large meetings and conventions.',
+        '用作大型和正式会议的举办。'
+    )
+    print()
+    print_me(
         'May I eat that cake ?',
-        '我 可以 吃 那个 蛋糕 吗 ？'
-    ))
+        '我可以吃那个蛋糕吗？'
+    )
 
     INDONESIAN = AlignedVectors(f'{BASE_PATH}/wiki.id.align.vec')
     GERMAN = AlignedVectors(f'{BASE_PATH}/wiki.de.align.vec')

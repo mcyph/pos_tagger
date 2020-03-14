@@ -35,7 +35,7 @@ class TokenizerBase(ABC):
             x = y
         return LRtn
 
-    def get_segments_as_ranges(self, s):
+    def get_segments_as_range_items(self, s):
         self.breaker.setText(s)
         x = 0
         LRtn = []

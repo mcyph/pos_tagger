@@ -1,6 +1,15 @@
-from collections import namedtuple
-from sys import maxsize
+from pos_tagger.fasttext_support.tokenizers.ICUTokenizer import WordTokenizer
+
+import importlib
 import numpy as np
+from sys import maxsize
+from _thread import allocate_lock
+from collections import namedtuple
+from pos_tagger.fasttext_support.aligned.punct_ws_symbols import \
+    REMOVE_PUNCT_WS_SYMBOLS_TABLE
+from pos_tagger.fasttext_support.aligned.stop_words import \
+    get_S_stop_words_for_iso
+
 
 #====================================================================#
 #                        Sentence Alignment                          #
@@ -14,13 +23,16 @@ AlignedItem = namedtuple('AlignedItem', [
 ])
 
 
-def get_tokens(iso, s):
-    # FOR TESTING ONLY!!! =========================================================
-    return s.split()
-
-
 def align_sentences(from_inst, to_inst,
-                    from_s, to_s):
+                    from_s, to_s,
+                    ignore_stop_words=True):
+
+    if ignore_stop_words:
+        SFromStopWords = get_S_stop_words_for_iso(from_inst.iso)
+        SToStopWords = get_S_stop_words_for_iso(to_inst.iso)
+    else:
+        SFromStopWords = set()
+        SToStopWords = set()
 
     # Tokenize the two sentences (if they haven't been already)
     # If using a POS system which tokenizes separately, it might
@@ -40,21 +52,29 @@ def align_sentences(from_inst, to_inst,
     LToVecs = []
 
     for x, from_token in enumerate(LFromTokens):
-        try:
-            from_vec = from_inst.get_vector_for_word(
-                from_token.lower()
-            )
-        except KeyError:
+        if not from_token.translate(REMOVE_PUNCT_WS_SYMBOLS_TABLE).strip() or \
+                from_token.lower() in SFromStopWords:
             from_vec = None
+        else:
+            try:
+                from_vec = from_inst.get_vector_for_word(
+                    from_token.lower()
+                )
+            except KeyError:
+                from_vec = None
         LFromVecs.append(from_vec)
 
     for y, to_token in enumerate(LToTokens):
-        try:
-            to_vec = to_inst.get_vector_for_word(
-                to_token.lower()
-            )
-        except KeyError:
+        if not to_token.translate(REMOVE_PUNCT_WS_SYMBOLS_TABLE).strip() or \
+                to_token.lower() in SToStopWords:
             to_vec = None
+        else:
+            try:
+                to_vec = to_inst.get_vector_for_word(
+                    to_token.lower()
+                )
+            except KeyError:
+                to_vec = None
         LToVecs.append(to_vec)
 
     # Get differential scores for all combinations
@@ -82,13 +102,22 @@ def align_sentences(from_inst, to_inst,
         idx1, idx2 = smallest_indices(
             a, min(len(LFromTokens), len(LToTokens))
         )
-        #print("IDX:", idx1, idx2)
 
+        all_maxsize = True
         for x, y in zip(idx1, idx2):
+            if all_maxsize and a[x, y] != maxsize:
+                all_maxsize = False
+            elif a[x, y] == maxsize:
+                continue
+
             if not x in DFromToMap and not y in DToFromMap:
                 DFromToMap[x] = y, a[x, y]
                 DToFromMap[y] = x, a[x, y]
             a[x, y] = maxsize
+
+        if all_maxsize:
+            # Prevent and infinite loop
+            break
 
     # Output aligned tokens (AlignedItem's)
     # Won't output whitespace for now
@@ -116,6 +145,29 @@ def align_sentences(from_inst, to_inst,
                                       to_token, None,
                                       None))
     return LFromRtn, LToRtn
+
+
+#====================================================================#
+#                          Miscellaneous                             #
+#====================================================================#
+
+
+_tokenizer_lock = allocate_lock()
+_DWordTokenizers = {}
+
+
+def get_tokens(iso, s):
+    with _tokenizer_lock:
+        if not iso in _DWordTokenizers:
+            # ICU should use a pretty similar scheme to what I use anyway
+            # (e.g. zh_Hant for traditional Chinese) hopefully converting
+            # - and | to underscores will work in most or all cases.
+            _DWordTokenizers[iso] = WordTokenizer(
+                iso.replace('-', '_'
+            ).replace(
+                '|', '_'
+            ))
+        return _DWordTokenizers[iso].get_segments(s)
 
 
 def smallest_indices(ary, n):
