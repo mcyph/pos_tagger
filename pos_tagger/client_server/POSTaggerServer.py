@@ -1,5 +1,3 @@
-from pos_tagger.POSTaggers import POSTaggers
-
 from speedysvc.rpc_decorators import json_method
 from speedysvc.client_server.base_classes.ServerMethodsBase import ServerMethodsBase
 
@@ -14,6 +12,7 @@ class POSTaggerServer(ServerMethodsBase):
         a server which has a GPU for POS tagging acceleration
         """
         ServerMethodsBase.__init__(self, logger_client)
+        from pos_tagger.POSTaggers import POSTaggers
         self.pos_taggers = POSTaggers()
 
     @json_method
