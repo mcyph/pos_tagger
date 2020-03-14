@@ -6,8 +6,6 @@ TODO: Use https://fasttext.cc/docs/en/aligned-vectors.html
 * Perhaps could also allow training my own models?
 * Output relative word probabilities
 """
-from collections import namedtuple
-from sys import maxsize
 import numpy as np
 
 # Putting this here so I don't forget
@@ -150,131 +148,9 @@ class AlignedVectors:
         do_print(LUnlikely)
 
 
-#====================================================================#
-#                        Sentence Alignment                          #
-#====================================================================#
-
-
-AlignedItem = namedtuple('AlignedItem', [
-    'source_index', 'target_index',
-    'source_text', 'target_text',
-    'score'
-])
-
-
-def get_tokens(iso, s):
-    # FOR TESTING ONLY!!! =========================================================
-    return s.split()
-
-
-def align_sentences(from_inst, to_inst,
-                    from_s, to_s):
-
-    # Tokenize the two sentences (if they haven't been already)
-    # If using a POS system which tokenizes separately, it might
-    # make sense to just use its output, and not do it again
-    if isinstance(from_s, (list, tuple)):
-        LFromTokens = from_s
-    else:
-        LFromTokens = get_tokens(from_inst.iso, from_s)
-
-    if isinstance(to_s, (list, tuple)):
-        LToTokens = to_s
-    else:
-        LToTokens = get_tokens(to_inst.iso, to_s)
-
-    # Get the vectors for all words we can
-    LFromVecs = []
-    LToVecs = []
-
-    for x, from_token in enumerate(LFromTokens):
-        try:
-            from_vec = from_inst.get_vector_for_word(
-                from_token.lower()
-            )
-        except KeyError:
-            from_vec = None
-        LFromVecs.append(from_vec)
-
-    for y, to_token in enumerate(LToTokens):
-        try:
-            to_vec = to_inst.get_vector_for_word(
-                to_token.lower()
-            )
-        except KeyError:
-            to_vec = None
-        LToVecs.append(to_vec)
-
-    # Get differential scores for all combinations
-    a = np.full(
-        shape=(len(LFromTokens), len(LToTokens)),
-        dtype='float32',
-        fill_value=maxsize
-    )
-    for x, from_token in enumerate(LFromTokens):
-        for y, to_token in enumerate(LToTokens):
-            from_vec = LFromVecs[x]
-            to_vec = LToVecs[y]
-
-            if from_vec is None or to_vec is None:
-                continue  # Already filled with `maxsize`
-            else:
-                diff = np.sum(np.abs(from_vec-to_vec))
-                a[x, y] = diff
-
-    # Get a from/to map of indices in LFromTokens/LToTokens
-    DFromToMap = {}
-    DToFromMap = {}
-
-    while len(DFromToMap) != min(len(LToVecs), len(LFromVecs)):
-        idx1, idx2 = smallest_indices(
-            a, min(len(LFromTokens), len(LToTokens))
-        )
-        #print("IDX:", idx1, idx2)
-
-        for x, y in zip(idx1, idx2):
-            if not x in DFromToMap and not y in DToFromMap:
-                DFromToMap[x] = y
-                DToFromMap[y] = x
-            a[x, y] = maxsize
-
-    # Output aligned tokens (AlignedItem's)
-    # Won't output whitespace for now
-    LFromRtn = []
-    for x, from_token in enumerate(LFromTokens):
-        if x in DFromToMap:
-            LFromRtn.append(AlignedItem(x, DFromToMap[x],
-                                        from_token, LToTokens[DFromToMap[x]],
-                                        a[x, y]))
-        else:
-            LFromRtn.append(AlignedItem(x, None,
-                                        from_token, None,
-                                        None))
-
-    LToRtn = []
-    for y, to_token in enumerate(LToTokens):
-        if y in DToFromMap:
-            LToRtn.append(AlignedItem(y, DToFromMap[y],
-                                      to_token, LFromTokens[DToFromMap[y]],
-                                      a[x, y]))
-        else:
-            LToRtn.append(AlignedItem(y, None,
-                                      to_token, None,
-                                      None))
-    return LFromRtn, LToRtn
-
-
-def smallest_indices(ary, n):
-    """
-    Returns the n smallest indices from a numpy array.
-    """
-    flat = ary.flatten()
-    indices = np.argpartition(flat, n)[:n] # CHECK ME!!
-    indices = indices[np.argsort(flat[indices])]
-    return np.unravel_index(indices, ary.shape)
-
-
 if __name__ == '__main__':
+    from pos_tagger.fasttext_support.aligned.align_sentences import \
+        align_sentences
     BASE_PATH = '/mnt/docs/dev/data/fast_text/aligned_word_vectors'
     ENGLISH = AlignedVectors(f'{BASE_PATH}/wiki.en.align.vec')
 
