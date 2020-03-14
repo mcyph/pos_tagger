@@ -171,15 +171,27 @@ if __name__ == '__main__':
         print()
         for item in to_tokens:
             print(item)
+        print()
 
     print_me(
         'It is used for large meetings and conventions.',
         '用作大型和正式会议的举办。'
     )
-    print()
     print_me(
         'May I eat that cake ?',
         '我可以吃那个蛋糕吗？'
+    )
+    print_me(
+        'For example, watching TV or going for a swim.',
+        '興趣是看電影跟慢跑，擅長游泳。'
+    )
+    print_me(
+        'Leo started swimming in 1996.',
+        '1996年 王一梅開始練習游泳。'
+    )
+    print_me(
+        'Peacekeeping was not the solution, but a means to an end.',
+        '维和并不是解决办法，而是达到目的的手段。'
     )
 
     INDONESIAN = AlignedVectors(f'{BASE_PATH}/wiki.id.align.vec')

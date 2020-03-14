@@ -25,7 +25,8 @@ AlignedItem = namedtuple('AlignedItem', [
 
 def align_sentences(from_inst, to_inst,
                     from_s, to_s,
-                    ignore_stop_words=True):
+                    ignore_stop_words=True,
+                    tolerance=1.24):
 
     if ignore_stop_words:
         SFromStopWords = get_S_stop_words_for_iso(from_inst.iso)
@@ -97,6 +98,7 @@ def align_sentences(from_inst, to_inst,
     # Get a from/to map of indices in LFromTokens/LToTokens
     DFromToMap = {}
     DToFromMap = {}
+    smallest = maxsize
 
     while len(DFromToMap) != min(len(LToVecs), len(LFromVecs)):
         idx1, idx2 = smallest_indices(
@@ -104,7 +106,12 @@ def align_sentences(from_inst, to_inst,
         )
 
         all_maxsize = True
-        for x, y in zip(idx1, idx2):
+        for x, y in sorted(zip(idx1, idx2), key=lambda xy: a[xy]):
+            if smallest == maxsize:
+                smallest = a[x, y]
+            else:
+                assert smallest <= a[x, y]
+
             if all_maxsize and a[x, y] != maxsize:
                 all_maxsize = False
             elif a[x, y] == maxsize:
@@ -123,7 +130,7 @@ def align_sentences(from_inst, to_inst,
     # Won't output whitespace for now
     LFromRtn = []
     for x, from_token in enumerate(LFromTokens):
-        if x in DFromToMap:
+        if x in DFromToMap and DFromToMap[x][-1] <= smallest*tolerance:
             other_idx, score = DFromToMap[x]
             LFromRtn.append(AlignedItem(x+1, other_idx+1,
                                         from_token, LToTokens[other_idx],
@@ -135,7 +142,7 @@ def align_sentences(from_inst, to_inst,
 
     LToRtn = []
     for y, to_token in enumerate(LToTokens):
-        if y in DToFromMap:
+        if y in DToFromMap and DToFromMap[y][-1] <= smallest*tolerance:
             other_idx, score = DToFromMap[y]
             LToRtn.append(AlignedItem(y+1, other_idx+1,
                                       to_token, LFromTokens[other_idx],
@@ -157,6 +164,14 @@ _DWordTokenizers = {}
 
 
 def get_tokens(iso, s):
+    if iso in ('zh', 'zh_Hant'):
+        from pos_tagger.engines.jieba_pos.JiebaPOS import JiebaPOS
+        class DUMMY: use_gpu = False
+        return [
+            i.word for i in
+            JiebaPOS(DUMMY).get_L_sentences(iso, s)[0]
+        ]
+
     with _tokenizer_lock:
         if not iso in _DWordTokenizers:
             # ICU should use a pretty similar scheme to what I use anyway
