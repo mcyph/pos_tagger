@@ -149,10 +149,23 @@ class SpacyUDPOS(SpacyPOSBase):
 
 
 if __name__ == '__main__':
-    # HACK!
-    SpacyUDPOS.use_gpu = True
+    import fcntl
+    SpacyUDPOS.use_gpu = True  # HACK!
     sud_pos = SpacyUDPOS(SpacyUDPOS)
 
     for iso in get_L_ud_iso_codes():
-        sud_pos._download_engine(iso)
-        sud_pos._get_model(iso)
+        # TODO: Make these locks work on Windows, too!
+        lock_filename = '/tmp/spacy_ud_pos_train_%s.lock' % iso
+        lock_file = open(lock_filename, 'w')
+        try:
+            fcntl.lockf(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except IOError:
+            print('Cannot lock: ' + lock_filename)
+            continue
+
+        try:
+            sud_pos._download_engine(iso)
+            sud_pos._get_model(iso)
+        except:
+            import traceback
+            traceback.print_exc()

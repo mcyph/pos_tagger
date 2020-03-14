@@ -12,6 +12,9 @@ import numpy as np
 # to enable the entire dictionaries
 TEST_MODE = True
 
+# TODO: Don't use this hardcoded path!
+BASE_PATH = '/mnt/docs/dev/data/fast_text/aligned_word_vectors'
+
 
 class AlignedVectors:
     def __init__(self, path):
@@ -40,7 +43,7 @@ class AlignedVectors:
                 if x % 1000 == 0:
                     print(x)
 
-                if x > 20000 and TEST_MODE:
+                if x > 40000 and TEST_MODE:
                     break
 
         a = np.ndarray(
@@ -151,7 +154,6 @@ class AlignedVectors:
 if __name__ == '__main__':
     from pos_tagger.fasttext_support.aligned.align_sentences import \
         align_sentences
-    BASE_PATH = '/mnt/docs/dev/data/fast_text/aligned_word_vectors'
     ENGLISH = AlignedVectors(f'{BASE_PATH}/wiki.en.align.vec')
 
     print(
@@ -161,10 +163,11 @@ if __name__ == '__main__':
     )
 
     CHINESE = AlignedVectors(f'{BASE_PATH}/wiki.zh.align.vec')
+    FRENCH = AlignedVectors(f'{BASE_PATH}/wiki.fr.align.vec')
 
-    def print_me(en_text, cn_text):
+    def print_me(en_text, cn_text, other_inst):
         from_tokens, to_tokens = align_sentences(
-            ENGLISH, CHINESE, en_text, cn_text
+            ENGLISH, other_inst, en_text, cn_text
         )
         for item in from_tokens:
             print(item)
@@ -175,23 +178,31 @@ if __name__ == '__main__':
 
     print_me(
         'It is used for large meetings and conventions.',
-        '用作大型和正式会议的举办。'
+        '用作大型和正式会议的举办。', CHINESE
     )
     print_me(
         'May I eat that cake ?',
-        '我可以吃那个蛋糕吗？'
+        '我可以吃那个蛋糕吗？', CHINESE
     )
     print_me(
         'For example, watching TV or going for a swim.',
-        '興趣是看電影跟慢跑，擅長游泳。'
+        '興趣是看電影跟慢跑，擅長游泳。', CHINESE
     )
     print_me(
         'Leo started swimming in 1996.',
-        '1996年 王一梅開始練習游泳。'
+        '1996年 王一梅開始練習游泳。', CHINESE
     )
     print_me(
         'Peacekeeping was not the solution, but a means to an end.',
-        '维和并不是解决办法，而是达到目的的手段。'
+        '维和并不是解决办法，而是达到目的的手段。', CHINESE
+    )
+    print_me(
+        'It is a powerful neighbour.',
+        'Il est là et c\'est un voisin puissant.', FRENCH
+    )
+    print_me(
+        "There's no cure for death.",
+        "Il n'y a pas de remède à la mort.", FRENCH
     )
 
     INDONESIAN = AlignedVectors(f'{BASE_PATH}/wiki.id.align.vec')

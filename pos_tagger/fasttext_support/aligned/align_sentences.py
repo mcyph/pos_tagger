@@ -26,7 +26,7 @@ AlignedItem = namedtuple('AlignedItem', [
 def align_sentences(from_inst, to_inst,
                     from_s, to_s,
                     ignore_stop_words=True,
-                    tolerance=1.24):
+                    tolerance=1.18): # 1.24
 
     if ignore_stop_words:
         SFromStopWords = get_S_stop_words_for_iso(from_inst.iso)
@@ -55,6 +55,7 @@ def align_sentences(from_inst, to_inst,
     for x, from_token in enumerate(LFromTokens):
         if not from_token.translate(REMOVE_PUNCT_WS_SYMBOLS_TABLE).strip() or \
                 from_token.lower() in SFromStopWords:
+            # Ignore stop words/punctuation/whitespace/symbols
             from_vec = None
         else:
             try:
@@ -123,7 +124,7 @@ def align_sentences(from_inst, to_inst,
             a[x, y] = maxsize
 
         if all_maxsize:
-            # Prevent and infinite loop
+            # Prevent an infinite loop
             break
 
     # Output aligned tokens (AlignedItem's)

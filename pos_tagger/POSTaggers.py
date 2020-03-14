@@ -10,6 +10,12 @@ from pos_tagger.engines.spacy_pos.SpacyPOS import SpacyPOS
 #from pos_tagger.engines.spacy_pos.SpacyUDPOS import SpacyUDPOS
 #from pos_tagger.engines.stanfordnlp_pos.StanfordNLPPOS import StanfordNLPPOS
 
+from pos_tagger.fasttext_support.aligned.AlignedVectors import \
+    BASE_PATH, AlignedVectors
+from pos_tagger.fasttext_support.aligned.align_sentences import \
+    align_sentences
+from pos_tagger.consts import AlignedCubeItem
+
 
 class POSTaggers(POSTaggersBase):
     def __init__(self, use_gpu=False,
@@ -23,12 +29,23 @@ class POSTaggers(POSTaggersBase):
         self.DPOSEngineCache = _LimitedSizeDict(
             size_limit=num_engines_in_cache
         )
+        self.DAVCache = _LimitedSizeDict(
+            size_limit=num_engines_in_cache
+        )
 
     def get_from_cache(self, typ, iso):
         return self.DPOSEngineCache[typ, iso]
 
     def add_to_cache(self, typ, iso, inst):
         self.DPOSEngineCache[typ, iso] = inst
+
+    def __get_from_av_cache(self, iso):
+        return self.DAVCache[iso]
+
+    def __add_to_av_cache(self, iso):
+        av = AlignedVectors(f'{BASE_PATH}/wiki.{iso}.align.vec')
+        self.DAVCache[iso] = av
+        return av
 
     def __get_D_get_L_sentences(self):
         pykomoran_pos = PyKomoranPOS(self)
@@ -102,6 +119,78 @@ class POSTaggers(POSTaggersBase):
     def get_L_sentences(self, iso, s):
         return self.DGetLSentences[iso].get_L_sentences(iso, s)
 
+    def get_aligned_sentences(self,
+                              from_iso, to_iso,
+                              from_s, to_s):
+
+        # TODO: Return AlignedCubeItem's
+        LFromCubeItems = self.get_L_sentences(from_iso, from_s)[0]
+        LToCubeItems = self.get_L_sentences(to_iso, to_s)[0]
+
+        try:
+            from_av = self.__get_from_av_cache(from_iso)
+        except KeyError:
+            from_av = self.__add_to_av_cache(from_iso)
+
+        try:
+            to_av = self.__get_from_av_cache(to_iso)
+        except KeyError:
+            to_av = self.__add_to_av_cache(to_iso)
+
+        LFromAligned, LToAligned = align_sentences(
+            from_av, to_av,
+            [i.word for i in LFromCubeItems],
+            [i.word for i in LToCubeItems]
+        )
+
+        DColors = {}
+        LColors = [
+            'slateBlue',
+            'seaGreen',
+            'saddleBrown',
+            'rebeccaPurple',
+            'navy',
+            'maroon',
+            'indigo',
+            'forestGreen',
+            'darkSlateGray',
+            'darkOliveGreen',
+            'darkRed',
+            'darkMagenta',
+            'darkGoldenRod',
+            'darkCyan',
+            'darkOrange',
+            'darkBlue'
+        ]
+
+        LFromRtn = []
+        for from_cube_item, from_aligned in zip(LFromCubeItems, LFromAligned):
+            D = from_cube_item._asdict()
+            D.update(from_aligned._asdict())
+
+            if D['target_index'] is not None:
+                D['color'] = LColors[0]
+                del LColors[0]
+                LColors.append(D['color'])
+                DColors[D['source_index'], D['target_index']] = D['color']
+            else:
+                D['color'] = None
+
+            LFromRtn.append(AlignedCubeItem(**D))
+
+        LToRtn = []
+        for to_cube_item, to_aligned in zip(LToCubeItems, LToAligned):
+            D = to_cube_item._asdict()
+            D.update(to_aligned._asdict())
+
+            if D['target_index'] is not None:
+                D['color'] = DColors[D['target_index'], D['source_index']]
+            else:
+                D['color'] = None
+
+            LToRtn.append(AlignedCubeItem(**D))
+        return LFromRtn, LToRtn
+
 
 class _LimitedSizeDict(OrderedDict):
     def __init__(self, *args, **kwds):
@@ -118,3 +207,19 @@ class _LimitedSizeDict(OrderedDict):
         if self.size_limit is not None:
             while len(self) > self.size_limit:
                 self.popitem(last=False)
+
+
+if __name__ == '__main__':
+    pt = POSTaggers(use_gpu=True)
+    from_, to_ = pt.get_aligned_sentences(
+        'en', 'en',
+        'The quick brown fox jumps',
+        'The brown quick jumps fox'
+    )
+
+    for item in from_:
+        print(item)
+    print()
+    for item in to_:
+        print(item)
+    print()

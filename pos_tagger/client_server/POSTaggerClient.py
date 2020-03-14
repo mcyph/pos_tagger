@@ -4,7 +4,7 @@ from speedysvc.client_server.base_classes.ClientMethodsBase import ClientMethods
 
 from pos_tagger.abstract_base_classes.POSTaggersBase import POSTaggersBase
 from pos_tagger.client_server.POSTaggerServer import POSTaggerServer as srv
-from pos_tagger.consts import CubeItem
+from pos_tagger.consts import CubeItem, AlignedCubeItem
 
 
 class POSTaggerClient(POSTaggersBase,
@@ -23,7 +23,11 @@ class POSTaggerClient(POSTaggersBase,
         )
         n_LRtn = []
         for LSentence in LRtn:
-            LSentence = [CubeItem(*i) for i in LSentence]
+            LSentence = [
+                CubeItem(*i) if len(i) == len(CubeItem._fields)
+                else AlignedCubeItem(*i)
+                for i in LSentence
+            ]
             n_LRtn.append(LSentence)
         return n_LRtn
 

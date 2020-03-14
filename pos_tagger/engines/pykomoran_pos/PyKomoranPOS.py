@@ -125,9 +125,8 @@ class PyKomoranPOS(EngineBase):
         assert iso == 'ko'
 
         LRtn = []
-
+        global DKomoran
         if len(DKomoran) > MAX_CACHED_INSTS:
-            global DKomoran
             DKomoran = {}
 
         if not get_ident() in DKomoran:
