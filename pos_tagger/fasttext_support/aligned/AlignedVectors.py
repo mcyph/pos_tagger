@@ -64,6 +64,9 @@ class AlignedVectors:
     #                              Getters                               #
     #====================================================================#
 
+    def __len__(self):
+        return len(self.DFreqs)
+
     def __iter__(self):
         for x, vec in enumerate(self.LVectors):
             yield x, self.DFreqsToWord[x], vec
