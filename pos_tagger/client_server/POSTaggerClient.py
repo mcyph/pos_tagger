@@ -40,8 +40,8 @@ class POSTaggerClient(POSTaggersBase,
         L1, L2 = self.send(srv.get_aligned_sentences, [
             from_iso, to_iso, from_s, to_s
         ])
-        L1 = self.__deserialize_cube_item(L1)
-        L2 = self.__deserialize_cube_item(L2)
+        L1 = self.__deserialize_cube_item([L1])[0]
+        L2 = self.__deserialize_cube_item([L2])[0]
         return L1, L2
 
     def __deserialize_cube_item(self, LRtn):
@@ -59,3 +59,4 @@ class POSTaggerClient(POSTaggersBase,
 if __name__ == '__main__':
     client = POSTaggerClient()
     print(client.get_L_sentences('en', 'blah'))
+    print(client.get_aligned_sentences('en', 'en', 'blah', 'blah'))
