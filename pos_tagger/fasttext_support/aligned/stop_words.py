@@ -69,6 +69,13 @@ def get_S_stop_words_for_iso(iso):
         assert iso in _LPossibleISOs
         mod = importlib.import_module('spacy.lang.%s' % iso)
         _DStopWordsCache[iso] = mod.STOP_WORDS
+        if iso == 'ko':
+            _DStopWordsCache[iso] = set(_DStopWordsCache[iso])
+            _DStopWordsCache[iso].add('는')
+            _DStopWordsCache[iso].add('은')
+            _DStopWordsCache[iso].add('다')
+            _DStopWordsCache[iso].add('도')
+
     except (ImportError, AttributeError, AssertionError):
         _DStopWordsCache[iso] = set()
     return _DStopWordsCache[iso]

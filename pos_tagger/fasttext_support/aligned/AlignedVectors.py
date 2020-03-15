@@ -43,7 +43,7 @@ class AlignedVectors:
                 if x % 1000 == 0:
                     print(x)
 
-                if x > 40000 and TEST_MODE:
+                if x > 100000 and TEST_MODE:
                     break
 
         a = np.ndarray(

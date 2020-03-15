@@ -59,3 +59,4 @@ class POSTaggerClient(POSTaggersBase,
 if __name__ == '__main__':
     client = POSTaggerClient()
     print(client.get_L_sentences('en', 'blah'))
+    print(client.get_aligned_sentences('en', 'en', 'blah', 'blah'))
