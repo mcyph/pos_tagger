@@ -6,6 +6,7 @@ from pos_tagger.engines.EngineBase import EngineBase
 
 DNLP = {}
 check_nlp_lock = allocate_lock()
+_gpu_required = False
 
 
 class SpacyPOSBase(EngineBase):
@@ -28,9 +29,11 @@ class SpacyPOSBase(EngineBase):
                 nlp = self.get_from_cache(iso)
             except KeyError:
                 import spacy
-                if self.use_gpu:
+                global _gpu_required
+                if self.use_gpu and not _gpu_required and False:    # NOTE ME!!! ===========================================
                     # TODO: Support different GPU ids??
                     spacy.require_gpu()
+                    _gpu_required = True
 
                 nlp = self._get_model(iso)
                 self.add_to_cache(iso, nlp)

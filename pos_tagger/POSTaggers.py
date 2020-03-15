@@ -1,4 +1,6 @@
+from _thread import allocate_lock
 from os.path import exists
+from functools import lru_cache
 from collections import OrderedDict
 
 from pos_tagger.abstract_base_classes.POSTaggersBase import POSTaggersBase
@@ -18,6 +20,10 @@ from pos_tagger.fasttext_support.aligned.align_sentences import \
 from pos_tagger.consts import AlignedCubeItem
 
 
+_lock = allocate_lock()
+_av_lock = allocate_lock()
+
+
 class POSTaggers(POSTaggersBase):
     def __init__(self, use_gpu=False,
                  num_engines_in_cache=3):
@@ -35,18 +41,21 @@ class POSTaggers(POSTaggersBase):
         )
 
     def get_from_cache(self, typ, iso):
-        return self.DPOSEngineCache[typ, iso]
+        with _lock:
+            return self.DPOSEngineCache[typ, iso]
 
     def add_to_cache(self, typ, iso, inst):
-        self.DPOSEngineCache[typ, iso] = inst
+        with _lock:
+            self.DPOSEngineCache[typ, iso] = inst
 
     def __get_from_av_cache(self, iso):
-        return self.DAVCache[iso]
-
-    def __add_to_av_cache(self, iso):
-        av = AlignedVectors(f'{BASE_PATH}/wiki.{iso}.align.vec')
-        self.DAVCache[iso] = av
-        return av
+        with _av_lock:
+            try:
+                return self.DAVCache[iso]
+            except KeyError:
+                av = AlignedVectors(f'{BASE_PATH}/wiki.{iso}.align.vec')
+                self.DAVCache[iso] = av
+                return av
 
     def __get_D_get_L_sentences(self):
         pykomoran_pos = PyKomoranPOS(self)
@@ -68,13 +77,7 @@ class POSTaggers(POSTaggersBase):
             'zh_Hant': jieba_pos
         }
 
-        # Add spaCy first, as it's quite
-        # fast and has a lot of features
-        # (even if not always the most accurate)
-        for _iso in spacy_pos.get_L_supported_isos():
-            if _iso in DGetLSentences:
-                continue
-            DGetLSentences[_iso] = spacy_pos
+
 
         # Add UD models I trained with spacy
         # Actually not sure if some of these might
@@ -109,6 +112,16 @@ class POSTaggers(POSTaggersBase):
                     continue
                 DGetLSentences[_iso] = cubenlp_pos
 
+        # Add spaCy first, as it's quite
+        # fast and has a lot of features
+        # (even if not always the most accurate)
+        # NOTE: I've put it last temporarily, as it seems CubeNLP conflicts with spaCy when using the GPU
+        # and I've needed to turn on CPU-only mode!
+        for _iso in spacy_pos.get_L_supported_isos():
+            if _iso in DGetLSentences:
+                continue
+            DGetLSentences[_iso] = spacy_pos
+
         return DGetLSentences
 
     def get_L_supported_isos(self):
@@ -136,20 +149,13 @@ class POSTaggers(POSTaggersBase):
         LFromCubeItems = self.get_L_sentences(from_iso, from_s)[0]
         LToCubeItems = self.get_L_sentences(to_iso, to_s)[0]
 
-        try:
-            from_av = self.__get_from_av_cache(from_iso)
-        except KeyError:
-            from_av = self.__add_to_av_cache(from_iso)
-
-        try:
-            to_av = self.__get_from_av_cache(to_iso)
-        except KeyError:
-            to_av = self.__add_to_av_cache(to_iso)
+        from_av = self.__get_from_av_cache(from_iso)
+        to_av = self.__get_from_av_cache(to_iso)
 
         LFromAligned, LToAligned = align_sentences(
             from_av, to_av,
-            [i.word for i in LFromCubeItems],
-            [i.word for i in LToCubeItems]
+            LFromCubeItems,
+            LToCubeItems
         )
 
         LFromRtn = []
