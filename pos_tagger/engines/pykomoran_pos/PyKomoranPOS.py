@@ -1,5 +1,6 @@
 # PyKomoran 불러오기
-from _thread import get_ident
+from queue import Queue
+from _thread import allocate_lock, start_new_thread, get_ident
 from pos_tagger.consts import CubeItem
 from pos_tagger.engines.EngineBase import EngineBase
 
@@ -102,10 +103,23 @@ DKomoranToUD = {
 
 
 # Komoran 객체 생성
-DKomoran = {}
-MAX_CACHED_INSTS = 2  # Not sure how many we can have without
-                      # java.lang.OutOfMemoryError: Java heap space
-                      # occurring
+_lock = allocate_lock()
+_komoran = None
+
+_send_q = Queue()
+
+def _worker():
+    from PyKomoran import Komoran
+    komoran = Komoran("EXP")
+    while True:
+        recv_q, s = _send_q.get()
+        try:
+            recv_q.put(komoran.get_token_list(s))
+        except:
+            import traceback
+            traceback.print_exc()
+            recv_q.put(None)
+start_new_thread(_worker, ())
 
 
 class PyKomoranPOS(EngineBase):
@@ -114,6 +128,7 @@ class PyKomoranPOS(EngineBase):
 
     def __init__(self, pos_taggers):
         EngineBase.__init__(self, pos_taggers)
+        self.DQueues = {}
 
     def is_iso_supported(self, iso):
         return iso == 'ko'
@@ -125,16 +140,13 @@ class PyKomoranPOS(EngineBase):
         assert iso == 'ko'
 
         LRtn = []
-        global DKomoran
-        if len(DKomoran) > MAX_CACHED_INSTS:
-            DKomoran = {}
-
-        if not get_ident() in DKomoran:
-            from PyKomoran import Komoran
-            DKomoran[get_ident()] = Komoran("EXP")  # Memory warning!! =========================================
-
-        komoran = DKomoran[get_ident()]
-        LTokenList = list(komoran.get_token_list(s))
+        if not get_ident() in self.DQueues:
+            self.DQueues[get_ident()] = Queue()
+        q = self.DQueues[get_ident()]
+        _send_q.put((q, s))
+        LTokenList = q.get()
+        if LTokenList is None:
+            raise Exception()
 
         for i, token in enumerate(LTokenList):
             segment = s[token.begin_index:token.end_index]
