@@ -55,6 +55,19 @@ class POSTaggerClient(POSTaggersBase,
             n_LRtn.append(LSentence)
         return n_LRtn
 
+    def get_similar_words(self, iso, word, n=30):
+        return self.send(srv.get_similar_words, [
+            iso, word, n
+        ])
+
+    def get_translations(self, from_iso, to_iso, s):
+        return self.send(srv.get_translations, [
+            from_iso, to_iso, s
+        ])
+
+    def fasttext_get_num_words(self, iso):
+        return self.send(srv.fasttext_get_num_words, [iso])
+
 
 if __name__ == '__main__':
     client = POSTaggerClient()

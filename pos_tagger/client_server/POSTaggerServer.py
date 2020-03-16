@@ -42,6 +42,18 @@ class CPUPOSTaggerServer(ServerMethodsBase):
             from_iso, to_iso, from_s, to_s
         )
 
+    @json_method
+    def get_similar_words(self, iso, word, n=30):
+        return self.pos_taggers.get_similar_words(iso, word, n)
+
+    @json_method
+    def get_translations(self, from_iso, to_iso, s):
+        return self.pos_taggers.get_translations(from_iso, to_iso, s)
+
+    @json_method
+    def fasttext_get_num_words(self, iso):
+        return self.pos_taggers.fasttext_get_num_words(iso)
+
 
 class GPUPOSTaggerServer(CPUPOSTaggerServer):
     def __init__(self, logger_client, use_gpu=True):

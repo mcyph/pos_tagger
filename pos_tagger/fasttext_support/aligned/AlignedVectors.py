@@ -6,7 +6,12 @@ TODO: Use https://fasttext.cc/docs/en/aligned-vectors.html
 * Perhaps could also allow training my own models?
 * Output relative word probabilities
 """
-import numpy as np
+try:
+    import cupy as np
+    print("AlignedVectors: using cupy on GPU")
+except ImportError:
+    import numpy as np
+    print("AlignedVectors: using numpy on CPU")
 
 # Putting this here so I don't forget
 # to enable the entire dictionaries
@@ -43,8 +48,10 @@ class AlignedVectors:
                 if x % 1000 == 0:
                     print(x)
 
-                if x > 100000 and TEST_MODE:
+                if x > 300000 and TEST_MODE:
                     break
+
+                #print(word)
 
         a = np.ndarray(
             shape=(
@@ -64,15 +71,15 @@ class AlignedVectors:
     #                              Getters                               #
     #====================================================================#
 
+    def __len__(self):
+        return len(self.DFreqs)
+
     def __iter__(self):
         for x, vec in enumerate(self.LVectors):
             yield x, self.DFreqsToWord[x], vec
 
     def word_index_to_word(self, word_index):
-        """
-        
-        """
-        return self.DFreqsToWord[word_index]
+        return self.DFreqsToWord[int(word_index)]
 
     def word_to_word_index(self, word):
         return self.DFreqs[word]
@@ -98,9 +105,13 @@ class AlignedVectors:
         LSmallestIdx = np.argpartition(LCands, n)[:n]
 
         LRtn = []
-        for idx in LSmallestIdx:
+        for idx in list(LSmallestIdx):
             # (score, word_index/frequency)
-            LRtn.append((LCands[idx], self.word_index_to_word(idx)))
+            LRtn.append((
+                idx,
+                float(LCands[idx]),
+                self.word_index_to_word(int(idx))
+            ))
         LRtn.sort()
         return LRtn
 
@@ -119,7 +130,7 @@ class AlignedVectors:
         eng_freq = self.DFreqs[s]
 
         def do_print(L):
-            for score, cand in L:
+            for freq, score, cand in L:
                 print(
                     score, cand,
                     f"English Freq: "
@@ -131,9 +142,7 @@ class AlignedVectors:
 
         # Really uncommon words are
         # lower quality and likely junk
-        for score, cand in LCands:
-            freq = other_aligned_vectors_inst.word_to_word_index(cand)
-
+        for freq, score, cand in LCands:
             if freq > min(eng_freq, 2000) * 6:
                 # It should be pretty unlikely that the word_index in English
                 # is an order of magnitude higher in the other language
@@ -163,7 +172,7 @@ if __name__ == '__main__':
     )
 
     CHINESE = AlignedVectors(f'{BASE_PATH}/wiki.zh.align.vec')
-    FRENCH = AlignedVectors(f'{BASE_PATH}/wiki.fr.align.vec')
+    #FRENCH = AlignedVectors(f'{BASE_PATH}/wiki.fr.align.vec')
 
     def print_me(en_text, cn_text, other_inst):
         from_tokens, to_tokens = align_sentences(
@@ -196,23 +205,24 @@ if __name__ == '__main__':
         'Peacekeeping was not the solution, but a means to an end.',
         '维和并不是解决办法，而是达到目的的手段。', CHINESE
     )
-    print_me(
-        'It is a powerful neighbour.',
-        'Il est là et c\'est un voisin puissant.', FRENCH
-    )
-    print_me(
-        "There's no cure for death.",
-        "Il n'y a pas de remède à la mort.", FRENCH
-    )
+    #print_me(
+    #    'It is a powerful neighbour.',
+    #    'Il est là et c\'est un voisin puissant.', FRENCH
+    #)
+    #print_me(
+    #    "There's no cure for death.",
+    #    "Il n'y a pas de remède à la mort.", FRENCH
+    #)
 
-    INDONESIAN = AlignedVectors(f'{BASE_PATH}/wiki.id.align.vec')
-    GERMAN = AlignedVectors(f'{BASE_PATH}/wiki.de.align.vec')
+    #INDONESIAN = AlignedVectors(f'{BASE_PATH}/wiki.id.align.vec')
+    #GERMAN = AlignedVectors(f'{BASE_PATH}/wiki.de.align.vec')
 
     while True:
         find_me = input("Enter a word to find:")
-        try:
-            ENGLISH.print_translations(CHINESE, find_me)
-            ENGLISH.print_translations(INDONESIAN, find_me)
-            ENGLISH.print_translations(GERMAN, find_me)
-        except KeyError:
-            print(f"{find_me} was not found")
+        for x in range(100):
+            try:
+                ENGLISH.print_translations(CHINESE, find_me)
+                #ENGLISH.print_translations(INDONESIAN, find_me)
+                #ENGLISH.print_translations(GERMAN, find_me)
+            except KeyError:
+                print(f"{find_me} was not found")

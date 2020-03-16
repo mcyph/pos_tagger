@@ -76,6 +76,7 @@ DPOSColours = {
     'PUNCT': 'white',
     'SYM': 'white',
     'X': 'white',  # other,
+    'SPACE': 'white',
 
     # FIXME!
     'PARAL': 'white',

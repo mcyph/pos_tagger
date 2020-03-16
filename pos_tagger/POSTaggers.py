@@ -40,6 +40,10 @@ class POSTaggers(POSTaggersBase):
             size_limit=num_engines_in_cache
         )
 
+    #============================================================#
+    #                     POS Tagger-Related                     #
+    #============================================================#
+
     def get_from_cache(self, typ, iso):
         with _lock:
             return self.DPOSEngineCache[typ, iso]
@@ -76,8 +80,6 @@ class POSTaggers(POSTaggersBase):
             'zh': jieba_pos,
             'zh_Hant': jieba_pos
         }
-
-
 
         # Add UD models I trained with spacy
         # Actually not sure if some of these might
@@ -133,6 +135,10 @@ class POSTaggers(POSTaggersBase):
     def get_L_sentences(self, iso, s):
         return self.DGetLSentences[iso].get_L_sentences(iso, s)
 
+    #============================================================#
+    #                      fastText-Related                      #
+    #============================================================#
+
     def is_alignment_supported(self, from_iso, to_iso):
         return (
             self.is_iso_supported(from_iso) and
@@ -170,6 +176,19 @@ class POSTaggers(POSTaggersBase):
             D.update(to_aligned._asdict())
             LToRtn.append(AlignedCubeItem(**D))
         return LFromRtn, LToRtn
+
+    def get_similar_words(self, iso, word, n=30):
+        av = self.__get_from_av_cache(iso)
+        vec = av.get_vector_for_word(word)
+        return av.get_similar_words(vec, n)
+
+    def get_translations(self, from_iso, to_iso, s):
+        from_av = self.__get_from_av_cache(from_iso)
+        to_av = self.__get_from_av_cache(to_iso)
+        return from_av.get_translations(to_av, s)
+
+    def fasttext_get_num_words(self, iso):
+        return len(self.__get_from_av_cache(iso))
 
 
 class _LimitedSizeDict(OrderedDict):
