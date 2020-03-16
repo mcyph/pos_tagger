@@ -191,7 +191,8 @@ class POSTaggers(POSTaggersBase):
         return len(self.__get_from_av_cache(iso))
 
     def get_fasttext_words(self, iso):
-        return list(self.__get_from_av_cache(iso))
+        # Discard the vector
+        return list([(int(i[0]), i[1]) for i in self.__get_from_av_cache(iso)])
 
 
 class _LimitedSizeDict(OrderedDict):

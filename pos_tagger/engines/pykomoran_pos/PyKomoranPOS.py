@@ -104,7 +104,7 @@ DKomoranToUD = {
 
 # Komoran 객체 생성
 _lock = allocate_lock()
-_komoran = None
+_komoran_started = False
 
 _send_q = Queue()
 
@@ -119,7 +119,6 @@ def _worker():
             import traceback
             traceback.print_exc()
             recv_q.put(None)
-start_new_thread(_worker, ())
 
 
 class PyKomoranPOS(EngineBase):
@@ -137,6 +136,12 @@ class PyKomoranPOS(EngineBase):
         return ['ko']
 
     def get_L_sentences(self, iso, s):
+        with _lock:
+            global _komoran_started
+            if not _komoran_started:
+                start_new_thread(_worker, ())
+                _komoran_started = True
+
         assert iso == 'ko'
 
         LRtn = []
