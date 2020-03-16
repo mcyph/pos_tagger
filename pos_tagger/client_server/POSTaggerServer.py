@@ -54,6 +54,10 @@ class CPUPOSTaggerServer(ServerMethodsBase):
     def fasttext_get_num_words(self, iso):
         return self.pos_taggers.fasttext_get_num_words(iso)
 
+    @json_method
+    def get_fasttext_words(self, iso):
+        return self.pos_taggers.get_fasttext_words(iso)
+
 
 class GPUPOSTaggerServer(CPUPOSTaggerServer):
     def __init__(self, logger_client, use_gpu=True):

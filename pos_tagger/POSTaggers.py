@@ -190,6 +190,9 @@ class POSTaggers(POSTaggersBase):
     def fasttext_get_num_words(self, iso):
         return len(self.__get_from_av_cache(iso))
 
+    def get_fasttext_words(self, iso):
+        return list(self.__get_from_av_cache(iso))
+
 
 class _LimitedSizeDict(OrderedDict):
     def __init__(self, *args, **kwds):

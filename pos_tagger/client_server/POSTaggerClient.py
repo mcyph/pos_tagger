@@ -68,6 +68,9 @@ class POSTaggerClient(POSTaggersBase,
     def fasttext_get_num_words(self, iso):
         return self.send(srv.fasttext_get_num_words, [iso])
 
+    def get_fasttext_words(self, iso):
+        return self.send(srv.get_fasttext_words, [iso])
+
 
 if __name__ == '__main__':
     client = POSTaggerClient()
