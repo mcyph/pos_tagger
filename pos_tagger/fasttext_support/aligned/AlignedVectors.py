@@ -8,10 +8,14 @@ TODO: Use https://fasttext.cc/docs/en/aligned-vectors.html
 """
 try:
     import cupy as np
+    from cupy import linalg
     print("AlignedVectors: using cupy on GPU")
+    using_gpu = True
 except ImportError:
     import numpy as np
+    from numpy import linalg
     print("AlignedVectors: using numpy on CPU")
+    using_gpu = False
 
 # Putting this here so I don't forget
 # to enable the entire dictionaries
@@ -19,6 +23,9 @@ TEST_MODE = True
 
 # TODO: Don't use this hardcoded path!
 BASE_PATH = '/mnt/docs/dev/data/fast_text/aligned_word_vectors'
+
+# Low frequency words actually yield remarkably low quality results!
+CUTOFF_FREQUENCY = 500
 
 
 class AlignedVectors:
@@ -48,7 +55,10 @@ class AlignedVectors:
                 if x % 1000 == 0:
                     print(x)
 
-                if x > 300000 and TEST_MODE:
+                if x > 25000 and TEST_MODE:
+                    # I say "test mode", and yet it might be better to always
+                    # clip results - millions of results might actually reduce
+                    # the quality as frequencies get lower!
                     break
 
                 #print(word)
@@ -76,6 +86,8 @@ class AlignedVectors:
 
     def __iter__(self):
         for x, vec in enumerate(self.LVectors):
+            if x < CUTOFF_FREQUENCY:
+                continue
             yield x, self.DFreqsToWord[x], vec
 
     def word_index_to_word(self, word_index):
@@ -100,19 +112,38 @@ class AlignedVectors:
 
         :param find_me: a vector found using get_vector_for_word()
         """
-        LCands = self.LVectors - find_me
-        LCands = np.sum(np.abs(LCands), axis=1)
-        LSmallestIdx = np.argpartition(LCands, n)[:n]
+
+        # I've tried to make sure I'm not transferring many times
+        # between gpu/main memory, as that can be very slow!!
+
+        # Use cosine similarity
+        # Could use sklearn, but best to use generic
+        # numpy ops so as to be able to parallelize
+        #from sklearn.metrics.pairwise import cosine_similarity
+        #LCands = cosine_similarity(find_me.reshape(1, -1), self.LVectors).reshape(-1)
+
+        a = find_me
+        b = self.LVectors
+        LCands = np.sum(a*b, axis=1)  # dot product for each row
+        LCands = LCands / (linalg.norm(a) * linalg.norm(b, axis=1))
+        LCands = LCands.reshape(-1)
+
+        LLargestIdx = np.argpartition(LCands, -n)[-n:]
+        LCands = LCands[LLargestIdx]
+
+        if using_gpu:
+            LLargestIdx = np.asnumpy(LLargestIdx)
+            LCands = np.asnumpy(LCands)
 
         LRtn = []
-        for idx in list(LSmallestIdx):
+        for idx, score in zip(LLargestIdx, LCands):
             # (score, word_index/frequency)
             LRtn.append((
-                idx,
-                float(LCands[idx]),
+                int(idx),
+                float(score),
                 self.word_index_to_word(int(idx))
             ))
-        LRtn.sort()
+        LRtn.sort(key=lambda i: i[1], reverse=True)
         return LRtn
 
     def get_translations(self, other_aligned_vectors_inst, s):
@@ -143,16 +174,19 @@ class AlignedVectors:
         # Really uncommon words are
         # lower quality and likely junk
         for freq, score, cand in LCands:
-            if freq > min(eng_freq, 2000) * 6:
+            if freq < 500:  # Very high frequency tokens actually yield remarkably low quality results
+                continue
+
+            if freq > max(eng_freq, 2000) * 6:
                 # It should be pretty unlikely that the word_index in English
                 # is an order of magnitude higher in the other language
 
                 # (OPEN ISSUE: Perhaps it could be argued, very common words
                 #  in one language may not be the best candidate for
                 #  uncommon words?)
-                LUnlikely.append((score, cand))
+                LUnlikely.append((freq, score, cand))
             else:
-                LLikely.append((score, cand))
+                LLikely.append((freq, score, cand))
 
         print("==Likely candidates==")
         do_print(LLikely)
