@@ -25,7 +25,7 @@ TEST_MODE = True
 BASE_PATH = '/mnt/docs/dev/data/fast_text/aligned_word_vectors'
 
 # Low frequency words actually yield remarkably low quality results!
-CUTOFF_FREQUENCY = 500
+CUTOFF_FREQUENCY = 700
 
 
 class AlignedVectors:
@@ -84,9 +84,9 @@ class AlignedVectors:
     def __len__(self):
         return len(self.DFreqs)
 
-    def __iter__(self):
+    def iter(self, exclude_high_freq=True):
         for x, vec in enumerate(self.LVectors):
-            if x < CUTOFF_FREQUENCY:
+            if x < CUTOFF_FREQUENCY and exclude_high_freq:
                 continue
             yield x, self.DFreqsToWord[x], vec
 

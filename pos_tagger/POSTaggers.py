@@ -3,6 +3,7 @@ from os.path import exists
 from functools import lru_cache
 from collections import OrderedDict
 
+from pos_tagger.engines.EngineProcess import EngineProcess
 from pos_tagger.abstract_base_classes.POSTaggersBase import POSTaggersBase
 from pos_tagger.engines.cubenlp_pos.CubeNLPPOS import CubeNLPPOS
 from pos_tagger.engines.jieba_pos.JiebaPOS import JiebaPOS
@@ -10,8 +11,7 @@ from pos_tagger.engines.pykomoran_pos.PyKomoranPOS import PyKomoranPOS
 from pos_tagger.engines.pythainlp_pos.PyThaiNLPPOS import PyThaiNLPPOS
 from pos_tagger.engines.pyvi_pos.PyViPOS import PyViPOS
 from pos_tagger.engines.spacy_pos.SpacyPOS import SpacyPOS
-#from pos_tagger.engines.spacy_pos.SpacyUDPOS import SpacyUDPOS
-#from pos_tagger.engines.stanfordnlp_pos.StanfordNLPPOS import StanfordNLPPOS
+from pos_tagger.engines.stanfordnlp_pos.StanfordNLPPOS import StanfordNLPPOS
 
 from pos_tagger.fasttext_support.aligned.AlignedVectors import \
     BASE_PATH, AlignedVectors
@@ -33,12 +33,12 @@ class POSTaggers(POSTaggersBase):
 
         self.DGetLSentences = self.__get_D_get_L_sentences()
         self.SSupportedISOs = set(self.get_L_supported_isos())
-        self.DPOSEngineCache = _LimitedSizeDict(
-            size_limit=num_engines_in_cache
-        )
-        self.DAVCache = _LimitedSizeDict(
-            size_limit=num_engines_in_cache
-        )
+        self.DPOSEngineCache = {} #_LimitedSizeDict(
+        #    size_limit=num_engines_in_cache
+        #)
+        self.DAVCache = {} #_LimitedSizeDict(
+        #    size_limit=num_engines_in_cache
+        #)
 
     #============================================================#
     #                     POS Tagger-Related                     #
@@ -67,10 +67,8 @@ class POSTaggers(POSTaggersBase):
         pythainlp_pos = PyThaiNLPPOS(self)
         pyvi_pos = PyViPOS(self)
         spacy_pos = SpacyPOS(self)
-        #spacy_ud_pos = SpacyUDPOS(self)
-
         cubenlp_pos = CubeNLPPOS(self)
-        #stanfordnlp_pos = StanfordNLPPOS(self)
+        stanfordnlp_pos = StanfordNLPPOS(self)
 
         # {iso: fn, ...}
         DGetLSentences = {
@@ -81,31 +79,19 @@ class POSTaggers(POSTaggersBase):
             'zh_Hant': jieba_pos
         }
 
-        # Add UD models I trained with spacy
-        # Actually not sure if some of these might
-        # be better than the base spaCy ones?
-        #
-        # ** Currently fairly broken, might re-enable
-        #    after rewriting to use the spaCy conll
-        #    import scripts (if I have time)
-        #for _iso in spacy_ud_pos.get_L_supported_isos():
-        #    if _iso in DGetLSentences:
-        #        continue
-        #    DGetLSentences[_iso] = spacy_ud_pos
-
         if self.use_gpu:
             # Next add stanford NLP
-            #for _iso in stanfordnlp_pos.get_L_supported_isos():
-            #    if _iso in DGetLSentences:
-            #        continue
-            #    DGetLSentences[_iso] = stanfordnlp_pos
+            for _iso in stanfordnlp_pos.get_L_supported_isos():
+                if _iso in DGetLSentences:
+                    continue
+                DGetLSentences[_iso] = stanfordnlp_pos
 
-                #if _iso == 'zh':
-                #    # We'll try traditional chinese as well
-                #    assert not 'zh_Hant' in DGetLSentences
-                #    DGetLSentences['zh_Hant'] = _closure(
-                #        stanfordnlp_pos.get_L_sentences, _iso
-                #    )
+            #if _iso == 'zh':
+            #    # We'll try traditional chinese as well
+            #    assert not 'zh_Hant' in DGetLSentences
+            #    DGetLSentences['zh_Hant'] = _closure(
+            #        stanfordnlp_pos.get_L_sentences, _iso
+            #    )
 
             # CubeNLP supports lots of languages, but is slow+needs GPU
             # acceleration that I can't have (with CUDA), so put it last
@@ -133,7 +119,28 @@ class POSTaggers(POSTaggersBase):
         return iso in self.SSupportedISOs
 
     def get_L_sentences(self, iso, s):
-        return self.DGetLSentences[iso].get_L_sentences(iso, s)
+        # Send through a proxy process (using multiprocessing)
+        # as many of these POS engines interfere with each
+        # other otherwise (especially when using the GPU!)
+        print("GET L SENTENCES")
+        try:
+            engine_process = self.get_from_cache(
+                self.DGetLSentences[iso].TYPE, iso
+            )
+        except KeyError:
+            inst_class = self.DGetLSentences[iso].INST_CLASS
+            engine_process = EngineProcess(
+                inst_class, iso,
+                use_gpu=self.use_gpu
+            )
+            self.add_to_cache(
+                self.DGetLSentences[iso].TYPE,
+                iso, engine_process
+            )
+        print(iso, s)
+        r = engine_process.get_L_sentences(s)
+        print(r)
+        return r
 
     #============================================================#
     #                      fastText-Related                      #
@@ -190,9 +197,10 @@ class POSTaggers(POSTaggersBase):
     def fasttext_get_num_words(self, iso):
         return len(self.__get_from_av_cache(iso))
 
-    def get_fasttext_words(self, iso):
+    def get_fasttext_words(self, iso, exclude_high_freq=True):
         # Discard the vector
-        return list([(int(i[0]), i[1]) for i in self.__get_from_av_cache(iso)])
+        return list([(int(i[0]), i[1]) for i in
+                     self.__get_from_av_cache(iso).iter(exclude_high_freq)])
 
 
 class _LimitedSizeDict(OrderedDict):
