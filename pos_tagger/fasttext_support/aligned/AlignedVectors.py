@@ -55,7 +55,7 @@ class AlignedVectors:
                 if x % 1000 == 0:
                     print(x)
 
-                if x > 25000 and TEST_MODE:
+                if x > 100000 and TEST_MODE:
                     # I say "test mode", and yet it might be better to always
                     # clip results - millions of results might actually reduce
                     # the quality as frequencies get lower!

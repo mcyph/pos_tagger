@@ -1,4 +1,5 @@
 import numpy as np
+from numpy import linalg
 from sys import maxsize
 from _thread import allocate_lock
 from collections import namedtuple
@@ -244,8 +245,10 @@ class _AlignSentences:
                 if from_vec is None or to_vec is None:
                     continue  # Already filled with `maxsize`
                 else:
-                    diff = np.sum(np.abs(from_vec-to_vec))
-                    a[x, y] = diff
+                    diff = np.sum(from_vec * to_vec)  # dot product
+                    diff = diff / (linalg.norm(from_vec) * linalg.norm(to_vec))
+                    a[x, y] = -diff
+                    #print("DIFF:", diff, from_token, to_token)
 
         # Get a from/to map of indices in LFromTokens/LToTokens
         DFromToMap = {}
@@ -276,6 +279,7 @@ class _AlignSentences:
 
             if all_maxsize:
                 # Prevent an infinite loop
+                print("ALL MAXSIZE!!!!")
                 break
 
         LFromRtn = self.get_aligned_tokens(
@@ -299,7 +303,7 @@ class _AlignSentences:
         """
         LRtn = []
         for x, token in enumerate(LTokens):
-            if x in DMap and DMap[x][-1] <= smallest * self.tolerance:
+            if x in DMap:  # and DMap[x][-1] <= smallest * self.tolerance
                 other_idx, score = DMap[x]
                 LRtn.append(_AlignedItem(int(x), int(other_idx),
                                          token, LOtherTokens[other_idx],
