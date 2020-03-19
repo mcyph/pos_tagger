@@ -7,20 +7,20 @@ class CubeNLPInst(EngineInstance):
     def __init__(self, iso, use_gpu=False):
         from pos_tagger.engines.cubenlp_pos.CubeNLPPOS import \
             DSupportedISOs
-        assert self.iso in DSupportedISOs
+        assert iso in DSupportedISOs
 
         # Note the GPU argument - it may be worth putting
         # this on the PC with a more powerful one
         from cube.api import Cube
         cube_inst = self.cube_inst = Cube(
             verbose=True,
-            use_gpu=self.use_gpu
+            use_gpu=use_gpu
         )
         # Chinese doesn't seem to work well with version 1.0,
         # [[??? <-  I think this means 1.1??]]
         # despite the scores not showing much difference
         cube_inst.load(
-            DSupportedISOs[self.iso],
+            DSupportedISOs[iso],
             version='1.0' if iso == 'zh' else '1.1'
         )
         EngineInstance.__init__(self, iso, use_gpu)

@@ -2,7 +2,12 @@ import os
 import signal
 import atexit
 from _thread import allocate_lock
-from multiprocessing import Process, Queue
+
+# To fix https://github.com/pytorch/pytorch/issues/2517
+from multiprocessing import set_start_method
+set_start_method('spawn', force=True)
+
+from multiprocessing import Process, Queue, set_start_method
 
 
 def _engine_process(cls, cmd_q, response_q, iso, use_gpu):
@@ -43,12 +48,15 @@ class EngineProcess:
             args=(cls, cmd_q, response_q, iso, use_gpu)
         )
         self.p.start()
-        atexit.register(self.__del__)
+        atexit.register(self.destroy)
 
     def __del__(self):
+        self.destroy()
+
+    def destroy(self):
         with self.lock:
             if self.p:
-                atexit.unregister(self.__del__)
+                atexit.unregister(self.destroy)
                 os.kill(self.p.pid, signal.SIGTERM)
                 self.cmd_q.put(('exit', None, None))
                 self.p.join()

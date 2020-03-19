@@ -8,7 +8,7 @@ class StanfordNLPInst(EngineInstance):
         self.nlp = stanfordnlp.Pipeline(
             lang=iso,
             processors="tokenize,pos,depparse,lemma,mwt",
-            use_gpu=False  # self.use_gpu
+            use_gpu=use_gpu
         )
         EngineInstance.__init__(self, iso, use_gpu)
 

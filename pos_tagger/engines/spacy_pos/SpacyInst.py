@@ -24,7 +24,7 @@ DSpacy = {
 class SpacyInst(EngineInstance):
     def __init__(self, iso, use_gpu=False):
         import spacy
-        if self.use_gpu:
+        if use_gpu:
             # TODO: Support different GPU ids??
             spacy.require_gpu()
 
