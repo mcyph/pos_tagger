@@ -204,7 +204,7 @@ class _AlignSentences:
                                 # If the POS is very different (hence displayed as
                                 # a different color) the probability of the match
                                 # being correct becomes much lower - disqualify!
-                                print("DISQUALIFYING:", other_sentence[use_ai.target_index-1], sentence[use_ai.source_index-1])
+                                #print("DISQUALIFYING:", other_sentence[use_ai.target_index-1], sentence[use_ai.source_index-1])
                                 score *= 1.3
 
             if score is not None and score > 16 and False: # ADJUST THIS NUMBER as needed!!! Often I've seen 18/19 as being a definitive cutoff
@@ -279,7 +279,7 @@ class _AlignSentences:
 
             if all_maxsize:
                 # Prevent an infinite loop
-                print("ALL MAXSIZE!!!!")
+                #print("ALL MAXSIZE!!!!")
                 break
 
         LFromRtn = self.get_aligned_tokens(

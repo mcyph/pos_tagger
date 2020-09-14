@@ -57,7 +57,7 @@ class EngineProcess:
         with self.lock:
             if self.p:
                 atexit.unregister(self.destroy)
-                print("KILLING PID:", self.p.pid)
+                #print("KILLING PID:", self.p.pid)
                 os.kill(self.p.pid, signal.SIGTERM)
                 self.cmd_q.put(('exit', None, None))
                 try:
