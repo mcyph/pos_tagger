@@ -28,7 +28,7 @@ JOIN_CHARS = '\n฀'  # 2 chars here - second unassigned in unicode
 
 class POSTaggers(POSTaggersBase):
     def __init__(self, use_gpu=False,
-                 num_engines_in_cache=6):
+                 num_engines_in_cache=14):
 
         self.use_gpu = use_gpu
         self.num_engines_in_cache = num_engines_in_cache
