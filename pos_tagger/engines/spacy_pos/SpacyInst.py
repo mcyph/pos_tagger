@@ -2,22 +2,27 @@ from pos_tagger.consts import CubeItem
 from pos_tagger.engines.EngineInstance import EngineInstance
 
 
-# Can also use 'lg' or 'md' for
+# Can also use 'sm', 'lg' or 'md' for
 # higher accuracy with vector embeddings
-USE_MODEL_KIND = 'sm'
-
+SPACY_SIZE = 'md'
 
 DSpacy = {
-    'en': 'en_core_web_sm',
-    'de': 'de_core_news_sm',
-    'fr': 'fr_core_news_sm',
-    'es': 'es_core_news_sm',
-    'pt': 'pt_core_news_sm',
-    'it': 'it_core_news_sm',
-    'nl': 'nl_core_news_sm',
-    'el': 'el_core_news_sm',
-    'nb': 'nb_core_news_sm',
-    'lt': 'lt_core_news_sm',
+    'en': f'en_core_web_{SPACY_SIZE}',
+    'de': f'de_core_news_{SPACY_SIZE}',
+    'fr': f'fr_core_news_{SPACY_SIZE}',
+    'es': f'es_core_news_{SPACY_SIZE}',
+    'pt': f'pt_core_news_{SPACY_SIZE}',
+    'it': f'it_core_news_{SPACY_SIZE}',
+    'nl': f'nl_core_news_{SPACY_SIZE}',
+    'el': f'el_core_news_{SPACY_SIZE}',
+    'nb': f'nb_core_news_{SPACY_SIZE}',
+    'lt': f'lt_core_news_{SPACY_SIZE}',
+
+    'zh': f'zh_core_web_{SPACY_SIZE}',
+    'da': f'da_core_news_{SPACY_SIZE}',
+    'ja': f'ja_core_news_{SPACY_SIZE}',
+    'pl': f'pt_core_news_{SPACY_SIZE}',
+    'ro': f'ro_core_news_{SPACY_SIZE}',
 }
 
 
@@ -50,3 +55,23 @@ class SpacyInst(EngineInstance):
                 space_after='_' if token.whitespace_ else 'SpaceAfter=No'
             ))
         return [LRtn]
+
+
+if __name__ == '__main__':
+    from os import system
+
+    system(f'python -m spacy download zh_core_web_{SPACY_SIZE}')
+    system(f'python -m spacy download da_core_news_{SPACY_SIZE}')
+    system(f'python -m spacy download nl_core_news_{SPACY_SIZE}')
+    system(f'python -m spacy download en_core_web_{SPACY_SIZE}')
+    system(f'python -m spacy download fr_core_news_{SPACY_SIZE}')
+    system(f'python -m spacy download de_core_news_{SPACY_SIZE}')
+    system(f'python -m spacy download el_core_news_{SPACY_SIZE}')
+    system(f'python -m spacy download it_core_news_{SPACY_SIZE}')
+    system(f'python -m spacy download ja_core_news_{SPACY_SIZE}')
+    system(f'python -m spacy download lt_core_news_{SPACY_SIZE}')
+    system(f'python -m spacy download nb_core_news_{SPACY_SIZE}')
+    system(f'python -m spacy download pl_core_news_{SPACY_SIZE}')
+    system(f'python -m spacy download pt_core_news_{SPACY_SIZE}')
+    system(f'python -m spacy download ro_core_news_{SPACY_SIZE}')
+    system(f'python -m spacy download es_core_news_{SPACY_SIZE}')

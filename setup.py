@@ -77,6 +77,8 @@ setup(
         'mecab-python3',
         'natto-py',
         'fugashi',
+        'sudachipy', # ==0.4.5
+        'pkuseg',
     ],
 
     package_data={
