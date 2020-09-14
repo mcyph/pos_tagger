@@ -19,6 +19,7 @@ DSpacy = {
     'lt': f'lt_core_news_{SPACY_SIZE}',
 
     'zh': f'zh_core_web_{SPACY_SIZE}',
+    'zh_Hant': f'zh_core_web_{SPACY_SIZE}',
     'da': f'da_core_news_{SPACY_SIZE}',
     'ja': f'ja_core_news_{SPACY_SIZE}',
     'pl': f'pt_core_news_{SPACY_SIZE}',
