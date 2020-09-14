@@ -57,9 +57,16 @@ class EngineProcess:
         with self.lock:
             if self.p:
                 atexit.unregister(self.destroy)
+                print("KILLING PID:", self.p.pid)
                 os.kill(self.p.pid, signal.SIGTERM)
                 self.cmd_q.put(('exit', None, None))
-                self.p.join()
+                try:
+                    self.p.join(timeout=0.3)
+                except:
+                    try:
+                        os.kill(self.p.pid, signal.SIGKILL)
+                    except:
+                        pass
                 self.p = None
 
     def get_L_sentences(self, s):

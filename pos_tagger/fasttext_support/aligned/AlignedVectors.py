@@ -6,6 +6,9 @@ TODO: Use https://fasttext.cc/docs/en/aligned-vectors.html
 * Perhaps could also allow training my own models?
 * Output relative word probabilities
 """
+import pickle
+from os.path import exists
+
 try:
     import cupy as np
     from cupy import linalg
@@ -19,7 +22,7 @@ except ImportError:
 
 # Putting this here so I don't forget
 # to enable the entire dictionaries
-TEST_MODE = True
+EMBEDDINGS_LIMIT = 100000
 
 # TODO: Don't use this hardcoded path!
 BASE_PATH = '/mnt/docs/dev/data/fast_text/aligned_word_vectors'
@@ -39,6 +42,13 @@ class AlignedVectors:
     #====================================================================#
 
     def __get_D_word_embeddings(self, path):
+        if exists(f'{path}.{EMBEDDINGS_LIMIT}.npy'):
+            with open(f'{path}.{EMBEDDINGS_LIMIT}.pkl', mode='rb') as f:
+                DFreqs, DFreqsToWord = pickle.load(f)
+            with open(f'{path}.{EMBEDDINGS_LIMIT}.npy', mode='rb') as f:
+                a = np.load(f)
+            return DFreqs, DFreqsToWord, a
+
         DWords = {}  # Note this isn't stored in `self`
         DFreqs = {}
         DFreqsToWord = {}
@@ -55,12 +65,11 @@ class AlignedVectors:
                 if x % 1000 == 0:
                     print(x)
 
-                if x > 100000 and TEST_MODE:
-                    # I say "test mode", and yet it might be better to always
+                if x > EMBEDDINGS_LIMIT:
+                    # A lot of the time it might be better to
                     # clip results - millions of results might actually reduce
                     # the quality as frequencies get lower!
                     break
-
                 #print(word)
 
         a = np.ndarray(
@@ -75,6 +84,11 @@ class AlignedVectors:
             #   (with 0 being the most common), as the files
             #   are sorted in order of most to least common
             a[DFreqs[word], :] = vec
+
+        with open(f'{path}.{EMBEDDINGS_LIMIT}.pkl', mode='wb') as f:
+            pickle.dump((DFreqs, DFreqsToWord), f)
+        with open(f'{path}.{EMBEDDINGS_LIMIT}.npy', mode='wb') as f:
+            np.save(f, a)
         return DFreqs, DFreqsToWord, a
 
     #====================================================================#

@@ -23,34 +23,37 @@ from pos_tagger.consts import AlignedCubeItem
 _lock = allocate_lock()
 _av_lock = allocate_lock()
 
+JOIN_CHARS = '\n฀'  # 2 chars here - second unassigned in unicode
+
 
 class POSTaggers(POSTaggersBase):
     def __init__(self, use_gpu=False,
-                 num_engines_in_cache=3):
+                 num_engines_in_cache=6):
 
         self.use_gpu = use_gpu
         self.num_engines_in_cache = num_engines_in_cache
 
         self.DGetLSentences = self.__get_D_get_L_sentences()
         self.SSupportedISOs = set(self.get_L_supported_isos())
-        self.DPOSEngineCache = {} #_LimitedSizeDict(
-        #    size_limit=num_engines_in_cache
-        #)
-        self.DAVCache = {} #_LimitedSizeDict(
-        #    size_limit=num_engines_in_cache
-        #)
+        self.DPOSEngineCache = _LimitedSizeDict(
+            size_limit=num_engines_in_cache
+        )
+        self.DAVCache = _LimitedSizeDict(
+            size_limit=num_engines_in_cache
+        )
+        self._DSentenceCache = {}
 
     #============================================================#
     #                     POS Tagger-Related                     #
     #============================================================#
 
     def get_from_cache(self, typ, iso):
-        with _lock:
-            return self.DPOSEngineCache[typ, iso]
+        assert _lock.locked()
+        return self.DPOSEngineCache[typ, iso]
 
     def add_to_cache(self, typ, iso, inst):
-        with _lock:
-            self.DPOSEngineCache[typ, iso] = inst
+        assert _lock.locked()
+        self.DPOSEngineCache[typ, iso] = inst
 
     def __get_from_av_cache(self, iso):
         with _av_lock:
@@ -79,13 +82,15 @@ class POSTaggers(POSTaggersBase):
             'zh_Hant': jieba_pos
         }
 
-        if self.use_gpu:
-            # Next add stanford NLP
-            for _iso in stanfordnlp_pos.get_L_supported_isos():
-                if _iso in DGetLSentences:
-                    continue
-                DGetLSentences[_iso] = stanfordnlp_pos
+        # Add spaCy first, as it's quite
+        # fast and has a lot of features
+        # (even if not always the most accurate)
+        for _iso in spacy_pos.get_L_supported_isos():
+            if _iso in DGetLSentences:
+                continue
+            DGetLSentences[_iso] = spacy_pos
 
+        if self.use_gpu and False:
             #if _iso == 'zh':
             #    # We'll try traditional chinese as well
             #    assert not 'zh_Hant' in DGetLSentences
@@ -100,15 +105,11 @@ class POSTaggers(POSTaggersBase):
                     continue
                 DGetLSentences[_iso] = cubenlp_pos
 
-        # Add spaCy first, as it's quite
-        # fast and has a lot of features
-        # (even if not always the most accurate)
-        # NOTE: I've put it last temporarily, as it seems CubeNLP conflicts with spaCy when using the GPU
-        # and I've needed to turn on CPU-only mode!
-        for _iso in spacy_pos.get_L_supported_isos():
-            if _iso in DGetLSentences:
-                continue
-            DGetLSentences[_iso] = spacy_pos
+            # Next add stanford NLP
+            for _iso in stanfordnlp_pos.get_L_supported_isos():
+                if _iso in DGetLSentences:
+                    continue
+                DGetLSentences[_iso] = stanfordnlp_pos
 
         return DGetLSentences
 
@@ -122,25 +123,105 @@ class POSTaggers(POSTaggersBase):
         # Send through a proxy process (using multiprocessing)
         # as many of these POS engines interfere with each
         # other otherwise (especially when using the GPU!)
-        print("GET L SENTENCES")
-        try:
-            engine_process = self.get_from_cache(
-                self.DGetLSentences[iso].TYPE, iso
-            )
-        except KeyError:
-            inst_class = self.DGetLSentences[iso].INST_CLASS
-            engine_process = EngineProcess(
-                inst_class, iso,
-                use_gpu=self.use_gpu
-            )
-            self.add_to_cache(
-                self.DGetLSentences[iso].TYPE,
-                iso, engine_process
-            )
-        print(iso, s)
-        r = engine_process.get_L_sentences(s)
-        print(r)
+        DCache = self._DSentenceCache.setdefault(iso, {})
+        if len(DCache) > 500:
+            self._DSentenceCache[iso] = {}
+
+        cached_item = DCache.get(s)
+        if cached_item is not None:
+            return cached_item
+
+        r = self._get_L_sentences(iso, s)
+        DCache[s] = r
         return r
+
+    def __enqueued_loop(self):
+        from pos_tagger.consts import CubeItem
+
+        while True:
+            while self.wake_up.q.size():
+                self.wake_up_q.get()
+
+            for iso, i_set in self._DQueues.items():
+                joined = JOIN_CHARS.join(i_set)
+
+                r = self._get_L_sentences(iso, joined)
+
+                r_out = []
+                current = []
+                index_offset = 0
+
+                for i in r:
+                    if i.word.strip() == JOIN_CHARS[-1]:
+                        current = []
+                        index_offset = i.index-1
+
+                    elif JOIN_CHARS[-1] in i.word:
+                        current.append(
+                            CubeItem(
+                                index=i.index - index_offset,
+                                word=i.word.split(JOIN_CHARS[-1])[0],
+                                lemma=i.lemma,
+                                upos=i.upos,
+                                xpos=i.xpos,
+                                attrs=i.attrs,
+                                head=i.head,
+                                label=i.label,
+                                space_after=i.space_after
+                            )
+                        )
+                        r_out.append(current)
+                        index_offset = i.index-1
+                        current = [
+                            CubeItem(
+                                index=i.index - index_offset,
+                                word=i.word.split(JOIN_CHARS[-1])[-1],
+                                lemma=i.lemma,
+                                upos=i.upos,
+                                xpos=i.xpos,
+                                attrs=i.attrs,
+                                head=i.head,
+                                label=i.label,
+                                space_after=i.space_after
+                            )
+                        ]
+                    else:
+                        current.append(i)
+
+                if current:
+                    r_out.append(current)
+
+                i_set.clear()
+
+    def enqueue_sentence(self, iso, sentence):
+        cached = self._DSentenceCache.get(iso, {}).get(sentence)
+        if cached is not None:
+            # Already done!
+            return
+
+        if not iso in self._DQueues:
+            self._DQueues[iso] = set()
+        self._DQueues[iso].add(sentence)
+        self.wake_up_q.put(None)
+
+    def _get_L_sentences(self, iso, s):
+        with _lock:
+            try:
+                engine_process = self.get_from_cache(
+                    self.DGetLSentences[iso].TYPE, iso
+                )
+            except KeyError:
+                inst_class = self.DGetLSentences[iso].INST_CLASS
+                engine_process = EngineProcess(
+                    inst_class, iso,
+                    use_gpu=self.use_gpu
+                )
+                self.add_to_cache(
+                    self.DGetLSentences[iso].TYPE,
+                    iso, engine_process
+                )
+            r = engine_process.get_L_sentences(s)
+            return r
 
     #============================================================#
     #                      fastText-Related                      #
@@ -217,7 +298,9 @@ class _LimitedSizeDict(OrderedDict):
     def _check_size_limit(self):
         if self.size_limit is not None:
             while len(self) > self.size_limit:
-                self.popitem(last=False)
+                k, v = self.popitem(last=False)
+                if hasattr(v, 'destroy'):
+                    v.destroy()
 
 
 if __name__ == '__main__':
