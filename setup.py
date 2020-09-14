@@ -17,11 +17,11 @@ with open(join(here, 'README.rst'), encoding='utf-8') as f:
 
 
 setup(
-    name='title_idx',
+    name='pos_tagger',
     version='0.1.0',
     description='Provides various title lookup indexes (like spellchecking, starts with, etc), with support for different languages',
     long_description=long_description,
-    url='https://github.com/jiyiiy/title_idx',
+    url='https://github.com/mcyph/pos_tagger',
     author='David Morrissey',
     author_email='david.l.morrissey@gmail.com',
 
