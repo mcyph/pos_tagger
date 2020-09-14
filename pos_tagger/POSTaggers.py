@@ -86,9 +86,11 @@ class POSTaggers(POSTaggersBase):
         # fast and has a lot of features
         # (even if not always the most accurate)
         for _iso in spacy_pos.get_L_supported_isos():
-            if _iso in DGetLSentences:
-                continue
+            #if _iso in DGetLSentences:
+            #    continue
             DGetLSentences[_iso] = spacy_pos
+            if _iso == 'zh':
+                DGetLSentences['zh_Hant'] = spacy_pos
 
         if self.use_gpu and False:
             #if _iso == 'zh':
