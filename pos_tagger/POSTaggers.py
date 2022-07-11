@@ -1,23 +1,22 @@
-from _thread import allocate_lock
 from os.path import exists
 from functools import lru_cache
+from _thread import allocate_lock
 from collections import OrderedDict
 
+from pos_tagger.consts import AlignedCubeItem
+from pos_tagger.engines.pyvi_pos.PyViPOS import PyViPOS
 from pos_tagger.engines.EngineProcess import EngineProcess
-from pos_tagger.abstract_base_classes.POSTaggersBase import POSTaggersBase
-from pos_tagger.engines.cubenlp_pos.CubeNLPPOS import CubeNLPPOS
+from pos_tagger.engines.spacy_pos.SpacyPOS import SpacyPOS
 from pos_tagger.engines.jieba_pos.JiebaPOS import JiebaPOS
+from pos_tagger.engines.cubenlp_pos.CubeNLPPOS import CubeNLPPOS
 from pos_tagger.engines.pykomoran_pos.PyKomoranPOS import PyKomoranPOS
 from pos_tagger.engines.pythainlp_pos.PyThaiNLPPOS import PyThaiNLPPOS
-from pos_tagger.engines.pyvi_pos.PyViPOS import PyViPOS
-from pos_tagger.engines.spacy_pos.SpacyPOS import SpacyPOS
+from pos_tagger.abstract_base_classes.POSTaggersBase import POSTaggersBase
 from pos_tagger.engines.stanfordnlp_pos.StanfordNLPPOS import StanfordNLPPOS
+from pos_tagger.fasttext_support.aligned.align_sentences import align_sentences
+from pos_tagger.fasttext_support.aligned.AlignedVectors import BASE_PATH, AlignedVectors
 
-from pos_tagger.fasttext_support.aligned.AlignedVectors import \
-    BASE_PATH, AlignedVectors
-from pos_tagger.fasttext_support.aligned.align_sentences import \
-    align_sentences
-from pos_tagger.consts import AlignedCubeItem
+from iso_tools.ISOCode import ISOCode
 
 
 _lock = allocate_lock()
@@ -118,10 +117,10 @@ class POSTaggers(POSTaggersBase):
     def get_L_supported_isos(self):
         return list(sorted(self.DGetLSentences.keys()))
 
-    def is_iso_supported(self, iso):
-        return iso in self.SSupportedISOs
+    def is_iso_supported(self, iso: ISOCode):
+        return iso in self.SSupportedISOs    #TODO!! =========================================================================================
 
-    def get_L_sentences(self, iso, s):
+    def get_L_sentences(self, iso: ISOCode, s: str):
         # Send through a proxy process (using multiprocessing)
         # as many of these POS engines interfere with each
         # other otherwise (especially when using the GPU!)
@@ -160,32 +159,28 @@ class POSTaggers(POSTaggersBase):
 
                     elif JOIN_CHARS[-1] in i.word:
                         current.append(
-                            CubeItem(
-                                index=i.index - index_offset,
-                                word=i.word.split(JOIN_CHARS[-1])[0],
-                                lemma=i.lemma,
-                                upos=i.upos,
-                                xpos=i.xpos,
-                                attrs=i.attrs,
-                                head=i.head,
-                                label=i.label,
-                                space_after=i.space_after
-                            )
+                            CubeItem(index=i.index - index_offset,
+                                     word=i.word.split(JOIN_CHARS[-1])[0],
+                                     lemma=i.lemma,
+                                     upos=i.upos,
+                                     xpos=i.xpos,
+                                     attrs=i.attrs,
+                                     head=i.head,
+                                     label=i.label,
+                                     space_after=i.space_after)
                         )
                         r_out.append(current)
                         index_offset = i.index-1
                         current = [
-                            CubeItem(
-                                index=i.index - index_offset,
-                                word=i.word.split(JOIN_CHARS[-1])[-1],
-                                lemma=i.lemma,
-                                upos=i.upos,
-                                xpos=i.xpos,
-                                attrs=i.attrs,
-                                head=i.head,
-                                label=i.label,
-                                space_after=i.space_after
-                            )
+                            CubeItem(index=i.index - index_offset,
+                                     word=i.word.split(JOIN_CHARS[-1])[-1],
+                                     lemma=i.lemma,
+                                     upos=i.upos,
+                                     xpos=i.xpos,
+                                     attrs=i.attrs,
+                                     head=i.head,
+                                     label=i.label,
+                                     space_after=i.space_after)
                         ]
                     else:
                         current.append(i)
