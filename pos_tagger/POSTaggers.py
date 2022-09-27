@@ -3,6 +3,9 @@ from functools import lru_cache
 from _thread import allocate_lock
 from collections import OrderedDict
 
+from iso_tools.ISOCode import ISOCode
+from speedysvc.service_method import service_method
+
 from pos_tagger.consts import AlignedCubeItem
 from pos_tagger.engines.pyvi_pos.PyViPOS import PyViPOS
 from pos_tagger.engines.EngineProcess import EngineProcess
@@ -16,13 +19,25 @@ from pos_tagger.engines.stanfordnlp_pos.StanfordNLPPOS import StanfordNLPPOS
 from pos_tagger.fasttext_support.aligned.align_sentences import align_sentences
 from pos_tagger.fasttext_support.aligned.AlignedVectors import BASE_PATH, AlignedVectors
 
-from iso_tools.ISOCode import ISOCode
-
 
 _lock = allocate_lock()
 _av_lock = allocate_lock()
 
 JOIN_CHARS = '\n฀'  # 2 chars here - second unassigned in unicode
+
+
+def deserialize_cube_item(LRtn):
+    from pos_tagger.consts import CubeItem
+
+    n_LRtn = []
+    for LSentence in LRtn:
+        LSentence = [
+            CubeItem(*i) if len(i) == len(CubeItem._fields)
+            else AlignedCubeItem(*i)
+            for i in LSentence
+        ]
+        n_LRtn.append(LSentence)
+    return n_LRtn
 
 
 class POSTaggers(POSTaggersBase):
@@ -34,12 +49,8 @@ class POSTaggers(POSTaggersBase):
 
         self.DGetLSentences = self.__get_D_get_L_sentences()
         self.SSupportedISOs = set(self.get_L_supported_isos())
-        self.DPOSEngineCache = _LimitedSizeDict(
-            size_limit=num_engines_in_cache
-        )
-        self.DAVCache = _LimitedSizeDict(
-            size_limit=num_engines_in_cache
-        )
+        self.DPOSEngineCache = _LimitedSizeDict(size_limit=num_engines_in_cache)
+        self.DAVCache = _LimitedSizeDict(size_limit=num_engines_in_cache)
         self._DSentenceCache = {}
 
     #============================================================#
@@ -114,12 +125,15 @@ class POSTaggers(POSTaggersBase):
 
         return DGetLSentences
 
+    @service_method()
     def get_L_supported_isos(self):
         return list(sorted(self.DGetLSentences.keys()))
 
+    @service_method()
     def is_iso_supported(self, iso: ISOCode):
         return iso in self.SSupportedISOs    #TODO!! =========================================================================================
 
+    @service_method(decode_returns=lambda x: deserialize_cube_item(x))
     def get_L_sentences(self, iso: ISOCode, s: str):
         # Send through a proxy process (using multiprocessing)
         # as many of these POS engines interfere with each
@@ -204,19 +218,12 @@ class POSTaggers(POSTaggersBase):
     def _get_L_sentences(self, iso, s):
         with _lock:
             try:
-                engine_process = self.get_from_cache(
-                    self.DGetLSentences[iso].TYPE, iso
-                )
+                engine_process = self.get_from_cache(self.DGetLSentences[iso].TYPE, iso)
             except KeyError:
                 inst_class = self.DGetLSentences[iso].INST_CLASS
-                engine_process = EngineProcess(
-                    inst_class, iso,
-                    use_gpu=self.use_gpu
-                )
-                self.add_to_cache(
-                    self.DGetLSentences[iso].TYPE,
-                    iso, engine_process
-                )
+                engine_process = EngineProcess(inst_class, iso, use_gpu=self.use_gpu)
+                self.add_to_cache(self.DGetLSentences[iso].TYPE, iso, engine_process)
+
             r = engine_process.get_L_sentences(s)
             return r
 
@@ -224,6 +231,7 @@ class POSTaggers(POSTaggersBase):
     #                      fastText-Related                      #
     #============================================================#
 
+    @service_method()
     def is_alignment_supported(self, from_iso, to_iso):
         return (
             self.is_iso_supported(from_iso) and
@@ -232,6 +240,7 @@ class POSTaggers(POSTaggersBase):
             exists(f'{BASE_PATH}/wiki.{to_iso}.align.vec')
         )
 
+    @service_method(decode_returns=lambda x: (deserialize_cube_item(x[0]), deserialize_cube_item(x[1])))
     def get_aligned_sentences(self,
                               from_iso, to_iso,
                               from_s, to_s):
@@ -243,11 +252,7 @@ class POSTaggers(POSTaggersBase):
         from_av = self.__get_from_av_cache(from_iso)
         to_av = self.__get_from_av_cache(to_iso)
 
-        LFromAligned, LToAligned = align_sentences(
-            from_av, to_av,
-            LFromCubeItems,
-            LToCubeItems
-        )
+        LFromAligned, LToAligned = align_sentences(from_av, to_av, LFromCubeItems, LToCubeItems)
 
         LFromRtn = []
         for from_cube_item, from_aligned in zip(LFromCubeItems, LFromAligned):
@@ -262,19 +267,23 @@ class POSTaggers(POSTaggersBase):
             LToRtn.append(AlignedCubeItem(**D))
         return LFromRtn, LToRtn
 
+    @service_method()
     def get_similar_words(self, iso, word, n=30):
         av = self.__get_from_av_cache(iso)
         vec = av.get_vector_for_word(word)
         return av.get_similar_words(vec, n)
 
+    @service_method()
     def get_translations(self, from_iso, to_iso, s):
         from_av = self.__get_from_av_cache(from_iso)
         to_av = self.__get_from_av_cache(to_iso)
         return from_av.get_translations(to_av, s)
 
+    @service_method()
     def fasttext_get_num_words(self, iso):
         return len(self.__get_from_av_cache(iso))
 
+    @service_method()
     def get_fasttext_words(self, iso, exclude_high_freq=True):
         # Discard the vector
         return list([(int(i[0]), i[1]) for i in
