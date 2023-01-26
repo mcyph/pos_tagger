@@ -1,9 +1,8 @@
 from os.path import exists
-from functools import lru_cache
 from _thread import allocate_lock
 from collections import OrderedDict
 
-from iso_tools.ISOCode import ISOCode
+from iso_tools.bcp47.BCP47Info import BCP47Info
 from speedysvc.service_method import service_method
 
 from pos_tagger.consts import AlignedCubeItem
@@ -130,11 +129,11 @@ class POSTaggers(POSTaggersBase):
         return list(sorted(self.DGetLSentences.keys()))
 
     @service_method()
-    def is_iso_supported(self, iso: ISOCode):
+    def is_iso_supported(self, iso: BCP47Info):
         return iso in self.SSupportedISOs    #TODO!! =========================================================================================
 
     @service_method(decode_returns=lambda x: deserialize_cube_item(x))
-    def get_L_sentences(self, iso: ISOCode, s: str):
+    def get_L_sentences(self, iso: BCP47Info, s: str):
         # Send through a proxy process (using multiprocessing)
         # as many of these POS engines interfere with each
         # other otherwise (especially when using the GPU!)
