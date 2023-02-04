@@ -30,9 +30,9 @@ class CubeNLPInst(EngineInstance):
 
         LRtn = []
         for LSentence in LSentences:
-            LItem = []
+            item_list = []
             for entry in LSentence:
-                LItem.append(CubeItem(
+                item_list.append(CubeItem(
                     index=int(entry.index),
                     word=entry.word,
                     lemma=entry.lemma,
@@ -43,7 +43,7 @@ class CubeNLPInst(EngineInstance):
                     label=str(entry.label),
                     space_after=entry.space_after
                 ))
-            LRtn.append(LItem)
+            LRtn.append(item_list)
         return LRtn
 
     def print_pos(self, iso, s):
