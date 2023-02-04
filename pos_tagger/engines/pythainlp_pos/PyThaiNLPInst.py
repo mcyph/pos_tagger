@@ -11,8 +11,8 @@ class PyThaiNLPInst(EngineInstance):
         from pythainlp import word_tokenize
         from pythainlp.tag import pos_tag  # , pos_tag_sents
 
-        LTokens = word_tokenize(s)
-        LPosTags = pos_tag(LTokens)
+        tokens_list = word_tokenize(s)
+        LPosTags = pos_tag(tokens_list)
 
         LRtn = []
 

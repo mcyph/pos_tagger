@@ -39,9 +39,9 @@ class SpacyInst(EngineInstance):
 
     def get_L_sentences(self, s):
         LRtn = []
-        LTokens = list(self.nlp(s))
+        tokens_list = list(self.nlp(s))
 
-        for i, token in enumerate(LTokens, start=1):
+        for i, token in enumerate(tokens_list, start=1):
             #print(token.head, token.whitespace_, token.n_lefts, token.n_rights, token.sentiment, token.shape, dir(token), dir(token.head))
             # TODO: FIX space after!!!
             LRtn.append(CubeItem(

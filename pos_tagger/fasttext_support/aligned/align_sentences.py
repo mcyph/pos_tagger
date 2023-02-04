@@ -115,9 +115,9 @@ class _AlignSentences:
                     iso.replace('-', '_').replace('|', '_'))
             return _DWordTokenizers[iso].get_segments(s)
 
-    def get_vectors(self, LTokens, SStopWords, inst):
+    def get_vectors(self, tokens_list, SStopWords, inst):
         LRtn = []
-        for x, token in enumerate(LTokens):
+        for x, token in enumerate(tokens_list):
             if (
                 not token.translate(
                     REMOVE_PUNCT_WS_SYMBOLS_TABLE
@@ -296,13 +296,13 @@ class _AlignSentences:
     #                      Alignment Utility Fns                         #
     #====================================================================#
 
-    def get_aligned_tokens(self, DMap, smallest, LTokens, LOtherTokens):
+    def get_aligned_tokens(self, DMap, smallest, tokens_list, LOtherTokens):
         """
         Output aligned tokens (AlignedItem's)
         Won't output whitespace for now
         """
         LRtn = []
-        for x, token in enumerate(LTokens):
+        for x, token in enumerate(tokens_list):
             if x in DMap:  # and DMap[x][-1] <= smallest * self.tolerance
                 other_idx, score = DMap[x]
                 LRtn.append(_AlignedItem(int(x), int(other_idx),
